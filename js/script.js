@@ -31,12 +31,17 @@ const cartButton = document.getElementById("cartButton");
 const cartPanel = document.getElementById("cartPanel");
 const cartOverlay = document.getElementById("cartOverlay");
 const closeCart = document.getElementById("closeCart");
+const cartView = document.getElementById("cartView");
 const cartItems = document.getElementById("cartItems");
 const cartCount = document.getElementById("cartCount");
 const cartTotal = document.getElementById("cartTotal");
 const toast = document.getElementById("toast");
 const menuToggle = document.querySelector(".menu-toggle");
 const mainNav = document.querySelector(".main-nav");
+const checkoutFormView = document.getElementById("checkoutFormView");
+const checkoutTotal = document.getElementById("checkoutTotal");
+const orderConfirmationView = document.getElementById("orderConfirmationView");
+const placeOrderButton = document.getElementById("placeOrderButton");
 
 function formatPrice(value) {
   return new Intl.NumberFormat("en-IN", {
@@ -92,25 +97,28 @@ function openCart() {
 function closeCartDrawer() {
   cartPanel.classList.remove("open");
   cartPanel.setAttribute("aria-hidden", "true");
+  showCartView();
   document.body.style.overflow = "";
   cartButton.focus();
 }
 
-document.querySelectorAll(".add-cart").forEach(button => {
-  button.addEventListener("click", () => {
-    const name = button.dataset.product;
-    const price = Number(button.dataset.price);
-    const existing = cart.find(item => item.name === name);
+document.addEventListener("click", (event) => {
+  const button = event.target.closest(".add-cart");
+  if (!button) return;
 
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      cart.push({ name, price, quantity: 1 });
-    }
+  const id = Number(button.dataset.id);
+  const name = button.dataset.product;
+  const price = Number(button.dataset.price);
+  const existing = cart.find(item => item.id === id);
 
-    renderCart();
-    showToast(`${name} added to your cart.`);
-  });
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    cart.push({ id, name, price, quantity: 1 });
+  }
+
+  renderCart();
+  showToast(`${name} added to your cart.`);
 });
 
 cartButton.addEventListener("click", openCart);
@@ -123,12 +131,72 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+function showCartView() {
+  cartView.hidden = false;
+  checkoutFormView.hidden = true;
+  orderConfirmationView.hidden = true;
+}
+
+function showCheckoutForm() {
+  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  checkoutTotal.textContent = formatPrice(total);
+  cartView.hidden = true;
+  checkoutFormView.hidden = false;
+  orderConfirmationView.hidden = true;
+}
+
+function showOrderConfirmation() {
+  cartView.hidden = true;
+  checkoutFormView.hidden = true;
+  orderConfirmationView.hidden = false;
+}
+
 document.getElementById("checkoutButton").addEventListener("click", () => {
   if (!cart.length) {
     showToast("Your cart is empty.");
     return;
   }
-  showToast("Checkout will be connected in the next version.");
+  showCheckoutForm();
+});
+
+document.getElementById("backToCart").addEventListener("click", showCartView);
+
+document.getElementById("continueShoppingButton").addEventListener("click", () => {
+  closeCartDrawer();
+  showCartView();
+});
+
+checkoutFormView.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  placeOrderButton.disabled = true;
+
+  const payload = {
+    customer_name: document.getElementById("checkoutName").value.trim(),
+    customer_phone: document.getElementById("checkoutPhone").value.trim(),
+    customer_email: document.getElementById("checkoutEmail").value.trim(),
+    delivery_address: document.getElementById("checkoutAddress").value.trim(),
+    notes: document.getElementById("checkoutNotes").value.trim(),
+    items: cart.map(item => ({ id: item.id, quantity: item.quantity }))
+  };
+
+  try {
+    const response = await fetch(`${API_BASE}/api/orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error("Order failed");
+
+    cart.length = 0;
+    renderCart();
+    checkoutFormView.reset();
+    showOrderConfirmation();
+  } catch {
+    showToast("Something went wrong placing your order. Please try again.");
+  } finally {
+    placeOrderButton.disabled = false;
+  }
 });
 
 function closeMobileNav() {

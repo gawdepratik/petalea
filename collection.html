@@ -53,61 +53,7 @@
 
     <section class="collection section-pad" style="padding-top: 40px;">
       <div class="container">
-        <div class="product-grid">
-          <article class="product-card">
-            <div class="product-placeholder ph-1"><span>PETALÉA</span></div>
-            <div class="product-info">
-              <h3>Golden Meadow Bouquet</h3>
-              <p>Warm golds &amp; amber tones</p>
-              <div class="product-bottom"><strong>₹1,199</strong><button class="add-cart" data-product="Golden Meadow Bouquet" data-price="1199">Add to cart</button></div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <div class="product-placeholder ph-2"><span>PETALÉA</span></div>
-            <div class="product-info">
-              <h3>Sage Whisper</h3>
-              <p>Soft sage with a touch of cream</p>
-              <div class="product-bottom"><strong>₹899</strong><button class="add-cart" data-product="Sage Whisper" data-price="899">Add to cart</button></div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <div class="product-placeholder ph-3"><span>PETALÉA</span></div>
-            <div class="product-info">
-              <h3>Terracotta Bloom</h3>
-              <p>Bold terracotta with rustic charm</p>
-              <div class="product-bottom"><strong>₹1,099</strong><button class="add-cart" data-product="Terracotta Bloom" data-price="1099">Add to cart</button></div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <div class="product-placeholder ph-4"><span>PETALÉA</span></div>
-            <div class="product-info">
-              <h3>Velvet Anemone</h3>
-              <p>Deep rose velvet petals</p>
-              <div class="product-bottom"><strong>₹1,349</strong><button class="add-cart" data-product="Velvet Anemone" data-price="1349">Add to cart</button></div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <div class="product-placeholder ph-5"><span>PETALÉA</span></div>
-            <div class="product-info">
-              <h3>Moonlit Peony</h3>
-              <p>Ivory peonies with a silver hush</p>
-              <div class="product-bottom"><strong>₹1,599</strong><button class="add-cart" data-product="Moonlit Peony" data-price="1599">Add to cart</button></div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <div class="product-placeholder ph-6"><span>PETALÉA</span></div>
-            <div class="product-info">
-              <h3>Cottage Garden Mix</h3>
-              <p>A wild, garden-picked medley</p>
-              <div class="product-bottom"><strong>₹999</strong><button class="add-cart" data-product="Cottage Garden Mix" data-price="999">Add to cart</button></div>
-            </div>
-          </article>
-        </div>
+        <div class="product-grid" id="all-grid"></div>
       </div>
     </section>
   </main>
@@ -125,12 +71,35 @@
     <div class="cart-overlay" id="cartOverlay"></div>
     <aside class="cart-drawer">
       <div class="cart-head"><h2>Your Cart</h2><button id="closeCart" aria-label="Close cart">×</button></div>
-      <div id="cartItems" class="cart-items"><p class="empty-cart">Your cart is waiting for something beautiful.</p></div>
-      <div class="cart-footer"><div><span>Total</span><strong id="cartTotal">₹0</strong></div><button class="button button-dark" id="checkoutButton">Checkout</button></div>
+
+      <div id="cartView">
+        <div id="cartItems" class="cart-items"><p class="empty-cart">Your cart is waiting for something beautiful.</p></div>
+        <div class="cart-footer"><div><span>Total</span><strong id="cartTotal">₹0</strong></div><button class="button button-dark" id="checkoutButton">Checkout</button></div>
+      </div>
+
+      <form id="checkoutFormView" class="checkout-form" hidden>
+        <button type="button" class="text-link back-link" id="backToCart">← Back to cart</button>
+        <label>Name<input required type="text" id="checkoutName" placeholder="Your name"></label>
+        <label>Phone<input required type="tel" id="checkoutPhone" placeholder="Your phone number"></label>
+        <label>Email<input required type="email" id="checkoutEmail" placeholder="you@example.com"></label>
+        <label>Delivery address<textarea required id="checkoutAddress" rows="3" placeholder="Where should we deliver this?"></textarea></label>
+        <label>Notes (optional)<textarea id="checkoutNotes" rows="2" placeholder="Anything else we should know?"></textarea></label>
+        <div class="checkout-total"><span>Total</span><strong id="checkoutTotal">₹0</strong></div>
+        <button class="button button-dark" type="submit" id="placeOrderButton">Place order</button>
+        <p class="admin-hint">Payment is collected separately for now — we'll reach out to confirm delivery and payment.</p>
+      </form>
+
+      <div id="orderConfirmationView" class="order-confirmation" hidden>
+        <h3>Thank you!</h3>
+        <p>Your order has been received. We'll reach out shortly to confirm delivery and payment details.</p>
+        <button class="button button-dark" id="continueShoppingButton">Continue shopping</button>
+      </div>
     </aside>
   </div>
 
   <div class="toast" id="toast">Added to your cart.</div>
+  <script src="js/config.js"></script>
+  <script src="js/products.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>

@@ -249,6 +249,7 @@ p { color: var(--brown); }
 .product-info p { font-size: 13px; margin: 6px 0 20px; }
 .product-bottom { display: flex; align-items: center; justify-content: space-between; }
 .product-bottom strong { font-size: 15px; font-family: var(--serif); font-size: 20px; }
+.price-original { text-decoration: line-through; color: var(--brown-light); font-size: 13px; margin-left: 6px; }
 .add-cart {
   border: 0; background: none; border-bottom: 1px solid var(--espresso); padding-bottom: 3px;
   font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--espresso);
@@ -379,6 +380,33 @@ p { color: var(--brown); }
 .cart-footer > div { display: flex; justify-content: space-between; margin-bottom: 22px; align-items: baseline; }
 .cart-footer strong { font-family: var(--serif); font-size: 24px; }
 .cart-footer .button { width: 100%; }
+
+#cartView { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+.checkout-form { display: flex; flex-direction: column; gap: 16px; flex: 1; min-height: 0; overflow-y: auto; padding: 20px 0 6px; }
+.checkout-form[hidden] { display: none; }
+.checkout-form label {
+  display: grid; gap: 6px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--brown); font-weight: 500;
+}
+.checkout-form input, .checkout-form textarea {
+  font-family: var(--sans); font-size: 14px; text-transform: none; letter-spacing: normal;
+  padding: 11px 13px; border: 1px solid var(--line); border-radius: 3px; color: var(--espresso);
+  background: var(--ivory); resize: vertical;
+}
+.checkout-form input:focus, .checkout-form textarea:focus { outline: none; border-color: var(--terracotta); }
+.checkout-form .back-link { align-self: flex-start; }
+.checkout-total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding-top: 14px; border-top: 1px solid var(--line); font-family: var(--serif);
+}
+.checkout-total strong { font-size: 22px; }
+.checkout-form .admin-hint { font-size: 12px; color: var(--brown-light); text-align: center; }
+
+.order-confirmation { display: flex; flex-direction: column; flex: 1; justify-content: center; gap: 16px; }
+.order-confirmation[hidden] { display: none; }
+#cartView[hidden] { display: none; }
+.order-confirmation h3 { font-size: 34px; font-style: italic; font-family: var(--serif); color: var(--terracotta); }
 
 .toast {
   position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px);

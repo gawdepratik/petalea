@@ -75,61 +75,7 @@
           <a class="text-link" href="collection.html">View all <span>→</span></a>
         </div>
 
-        <div class="product-grid reveal">
-          <article class="product-card">
-            <img src="images/Blush Bloom Bouquet.png" alt="Blush Bloom Bouquet">
-            <div class="product-info">
-              <h3>Blush Bloom Bouquet</h3>
-              <p>Soft blush & ivory tones</p>
-              <div class="product-bottom"><strong>₹1,299</strong><button class="add-cart" data-product="Blush Bloom Bouquet" data-price="1299">Add to cart</button></div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <img src="images/Lavender Meadow.png" alt="Lavender Meadow">
-            <div class="product-info">
-              <h3>Lavender Meadow</h3>
-              <p>Dreamy lavender arrangement</p>
-              <div class="product-bottom"><strong>₹1,499</strong><button class="add-cart" data-product="Lavender Meadow" data-price="1499">Add to cart</button></div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <img src="images/Petite Forever Bloom.png" alt="Petite Forever Bloom">
-            <div class="product-info">
-              <h3>Petite Forever Bloom</h3>
-              <p>A little bloom for a little joy</p>
-              <div class="product-bottom"><strong>₹699</strong><button class="add-cart" data-product="Petite Forever Bloom" data-price="699">Add to cart</button></div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <img src="images/Rose.jpg" alt="Little Rose Affair">
-            <div class="product-info">
-              <h3>Little Rose Affair</h3>
-              <p>A petite arrangement for someone special</p>
-              <div class="product-bottom"><strong>₹699</strong><button class="add-cart" data-product="Little Rose Affair" data-price="699">Add to cart</button></div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <img src="images/Pearl Petals.jpg" alt="Pearl Petals">
-            <div class="product-info">
-              <h3>Pearl Petals</h3>
-              <p>Elegant ivory blooms with a delicate glow</p>
-              <div class="product-bottom"><strong>₹699</strong><button class="add-cart" data-product="Pearl Petals" data-price="699">Add to cart</button></div>
-            </div>
-          </article>
-
-          <article class="product-card">
-            <img src="images/Pastel Daydream.jpg" alt="Pastel Daydream">
-            <div class="product-info">
-              <h3>Pastel Daydream</h3>
-              <p>Soft, romantic petals that last</p>
-              <div class="product-bottom"><strong>₹699</strong><button class="add-cart" data-product="Pastel Daydream" data-price="699">Add to cart</button></div>
-            </div>
-          </article>
-        </div>
+        <div class="product-grid reveal" id="featured-grid"></div>
       </div>
     </section>
 
@@ -218,12 +164,35 @@
     <div class="cart-overlay" id="cartOverlay"></div>
     <aside class="cart-drawer">
       <div class="cart-head"><h2>Your Cart</h2><button id="closeCart" aria-label="Close cart">×</button></div>
-      <div id="cartItems" class="cart-items"><p class="empty-cart">Your cart is waiting for something beautiful.</p></div>
-      <div class="cart-footer"><div><span>Total</span><strong id="cartTotal">₹0</strong></div><button class="button button-dark" id="checkoutButton">Checkout</button></div>
+
+      <div id="cartView">
+        <div id="cartItems" class="cart-items"><p class="empty-cart">Your cart is waiting for something beautiful.</p></div>
+        <div class="cart-footer"><div><span>Total</span><strong id="cartTotal">₹0</strong></div><button class="button button-dark" id="checkoutButton">Checkout</button></div>
+      </div>
+
+      <form id="checkoutFormView" class="checkout-form" hidden>
+        <button type="button" class="text-link back-link" id="backToCart">← Back to cart</button>
+        <label>Name<input required type="text" id="checkoutName" placeholder="Your name"></label>
+        <label>Phone<input required type="tel" id="checkoutPhone" placeholder="Your phone number"></label>
+        <label>Email<input required type="email" id="checkoutEmail" placeholder="you@example.com"></label>
+        <label>Delivery address<textarea required id="checkoutAddress" rows="3" placeholder="Where should we deliver this?"></textarea></label>
+        <label>Notes (optional)<textarea id="checkoutNotes" rows="2" placeholder="Anything else we should know?"></textarea></label>
+        <div class="checkout-total"><span>Total</span><strong id="checkoutTotal">₹0</strong></div>
+        <button class="button button-dark" type="submit" id="placeOrderButton">Place order</button>
+        <p class="admin-hint">Payment is collected separately for now — we'll reach out to confirm delivery and payment.</p>
+      </form>
+
+      <div id="orderConfirmationView" class="order-confirmation" hidden>
+        <h3>Thank you!</h3>
+        <p>Your order has been received. We'll reach out shortly to confirm delivery and payment details.</p>
+        <button class="button button-dark" id="continueShoppingButton">Continue shopping</button>
+      </div>
     </aside>
   </div>
 
   <div class="toast" id="toast">Added to your cart.</div>
+  <script src="js/config.js"></script>
+  <script src="js/products.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>

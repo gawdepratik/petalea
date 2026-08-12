@@ -1,0 +1,215 @@
+const express = require("express");
+const { pool } = require("../db");
+const { requireAdmin } = require("../middleware/requireAdmin");
+const { sendMail } = require("../email");
+
+const router = express.Router();
+
+function parseDateRange(query) {
+  const from = query.from ? new Date(`${query.from}T00:00:00Z`) : null;
+  const to = query.to ? new Date(`${query.to}T23:59:59Z`) : null;
+  return { from, to };
+}
+
+router.post("/orders", async (req, res) => {
+  const {
+    customer_name,
+    customer_email,
+    customer_phone,
+    delivery_address = "",
+    notes = "",
+    items
+  } = req.body;
+
+  if (!customer_name || !customer_email || !customer_phone) {
+    return res.status(400).json({ error: "Name, email, and phone are required" });
+  }
+  if (!Array.isArray(items) || !items.length) {
+    return res.status(400).json({ error: "Order must include at least one item" });
+  }
+
+  const ids = items.map((i) => Number(i.id));
+  const { rows: products } = await pool.query(
+    "SELECT id, name, price, discount_percent FROM products WHERE id = ANY($1) AND active = true",
+    [ids]
+  );
+
+  if (!products.length) {
+    return res.status(400).json({ error: "None of the items in this order are available" });
+  }
+
+  const lineItems = items
+    .map((item) => {
+      const product = products.find((p) => p.id === Number(item.id));
+      if (!product) return null;
+      const quantity = Math.max(1, Number(item.quantity) || 1);
+      const unitPrice = Math.round(product.price * (1 - product.discount_percent / 100));
+      return { name: product.name, unitPrice, quantity };
+    })
+    .filter(Boolean);
+
+  const subtotal = lineItems.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+  const total = subtotal;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows: orderRows } = await client.query(
+      `INSERT INTO orders (customer_name, customer_email, customer_phone, delivery_address, notes, subtotal, total)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [customer_name, customer_email, customer_phone, delivery_address, notes, subtotal, total]
+    );
+    const orderId = orderRows[0].id;
+
+    for (const item of lineItems) {
+      await client.query(
+        `INSERT INTO order_items (order_id, product_name, unit_price, quantity)
+         VALUES ($1, $2, $3, $4)`,
+        [orderId, item.name, item.unitPrice, item.quantity]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim()).filter(Boolean);
+    const itemLines = lineItems.map((i) => `- ${i.name} x${i.quantity} (₹${i.unitPrice} each)`).join("\n");
+    try {
+      await Promise.all(
+        adminEmails.map((to) =>
+          sendMail({
+            to,
+            subject: `New order #${orderId} — ₹${total}`,
+            text: `New order from ${customer_name} (${customer_email}, ${customer_phone}).\n\nItems:\n${itemLines}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}\nNotes: ${notes || "—"}`
+          })
+        )
+      );
+    } catch (emailErr) {
+      console.error("Order notification email failed:", emailErr.message);
+    }
+
+    res.status(201).json({ ok: true, orderId, total });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    res.status(500).json({ error: "Could not place order" });
+  } finally {
+    client.release();
+  }
+});
+
+router.get("/admin/orders", requireAdmin, async (req, res) => {
+  const { from, to } = parseDateRange(req.query);
+  const conditions = [];
+  const params = [];
+
+  if (from) {
+    params.push(from);
+    conditions.push(`o.created_at >= $${params.length}`);
+  }
+  if (to) {
+    params.push(to);
+    conditions.push(`o.created_at <= $${params.length}`);
+  }
+  if (req.query.status) {
+    params.push(req.query.status);
+    conditions.push(`o.status = $${params.length}`);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const { rows: orders } = await pool.query(
+    `SELECT * FROM orders o ${where} ORDER BY o.created_at DESC`,
+    params
+  );
+
+  if (!orders.length) return res.json([]);
+
+  const orderIds = orders.map((o) => o.id);
+  const { rows: items } = await pool.query(
+    "SELECT * FROM order_items WHERE order_id = ANY($1)",
+    [orderIds]
+  );
+
+  const itemsByOrder = items.reduce((acc, item) => {
+    (acc[item.order_id] = acc[item.order_id] || []).push(item);
+    return acc;
+  }, {});
+
+  res.json(orders.map((o) => ({ ...o, items: itemsByOrder[o.id] || [] })));
+});
+
+router.get("/admin/reports/summary", requireAdmin, async (req, res) => {
+  const { from, to } = parseDateRange(req.query);
+  const conditions = [];
+  const params = [];
+
+  if (from) {
+    params.push(from);
+    conditions.push(`created_at >= $${params.length}`);
+  }
+  if (to) {
+    params.push(to);
+    conditions.push(`created_at <= $${params.length}`);
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const { rows: totals } = await pool.query(
+    `SELECT COUNT(*)::int AS order_count, COALESCE(SUM(total), 0)::int AS total_revenue
+     FROM orders ${where}`,
+    params
+  );
+
+  const { rows: topProducts } = await pool.query(
+    `SELECT oi.product_name, SUM(oi.quantity)::int AS quantity, SUM(oi.unit_price * oi.quantity)::int AS revenue
+     FROM order_items oi
+     JOIN orders o ON o.id = oi.order_id
+     ${where}
+     GROUP BY oi.product_name
+     ORDER BY revenue DESC
+     LIMIT 5`,
+    params
+  );
+
+  res.json({ ...totals[0], topProducts });
+});
+
+router.get("/admin/reports/export.csv", requireAdmin, async (req, res) => {
+  const { from, to } = parseDateRange(req.query);
+  const conditions = [];
+  const params = [];
+
+  if (from) {
+    params.push(from);
+    conditions.push(`created_at >= $${params.length}`);
+  }
+  if (to) {
+    params.push(to);
+    conditions.push(`created_at <= $${params.length}`);
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+
+  const { rows: orders } = await pool.query(
+    `SELECT id, created_at, customer_name, customer_email, customer_phone, subtotal, total, payment_status, status
+     FROM orders ${where} ORDER BY created_at DESC`,
+    params
+  );
+
+  const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+  const header = ["Order ID", "Date", "Name", "Email", "Phone", "Subtotal", "Total", "Payment Status", "Order Status"];
+  const lines = [header.join(",")];
+
+  for (const o of orders) {
+    lines.push(
+      [o.id, o.created_at.toISOString(), o.customer_name, o.customer_email, o.customer_phone, o.subtotal, o.total, o.payment_status, o.status]
+        .map(escape)
+        .join(",")
+    );
+  }
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", "attachment; filename=petalea-orders.csv");
+  res.send(lines.join("\n"));
+});
+
+module.exports = router;

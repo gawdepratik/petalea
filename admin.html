@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin | PETALÉA</title>
+  <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="index.html" aria-label="PETALÉA home">PETALÉA</a>
+      <span class="admin-tag">Admin</span>
+    </div>
+  </header>
+
+  <main class="container admin-main">
+    <section id="loginView" class="admin-card">
+      <p class="eyebrow">ADMIN ACCESS</p>
+      <h2>Sign in</h2>
+
+      <form id="emailForm" class="admin-form">
+        <label>Email
+          <input type="email" id="emailInput" required placeholder="you@petalea.in">
+        </label>
+        <button class="button button-dark" type="submit">Send login code</button>
+      </form>
+
+      <form id="codeForm" class="admin-form" hidden>
+        <p class="admin-hint">We sent a 6-digit code to <strong id="codeEmailLabel"></strong>.</p>
+        <label>Code
+          <input type="text" id="codeInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" required placeholder="123456">
+        </label>
+        <button class="button button-dark" type="submit">Verify &amp; sign in</button>
+        <button class="text-link" type="button" id="resendCode">Resend code</button>
+      </form>
+
+      <p id="loginError" class="admin-error" hidden></p>
+    </section>
+
+    <section id="dashboardView" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">DASHBOARD</p>
+          <h2 id="dashboardTitle">Products</h2>
+        </div>
+        <div class="admin-actions">
+          <div class="admin-tabs">
+            <button class="admin-tab active" id="tabProducts" type="button">Products</button>
+            <button class="admin-tab" id="tabOrders" type="button">Orders &amp; Sales</button>
+          </div>
+          <button class="button button-outline" id="logoutButton" type="button">Log out</button>
+        </div>
+      </div>
+
+      <p id="adminError" class="admin-error" hidden></p>
+
+      <div id="productsPanel">
+        <div class="admin-actions admin-panel-actions">
+          <button class="button button-dark" id="newProductButton" type="button">Add product</button>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Discount</th>
+                <th>Featured</th>
+                <th>Active</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="ordersPanel" hidden>
+        <form id="reportFilterForm" class="admin-filter-bar">
+          <label>From<input type="date" id="filterFrom"></label>
+          <label>To<input type="date" id="filterTo"></label>
+          <button class="button button-outline" type="submit">Filter</button>
+          <a class="text-link" id="exportCsvLink" href="#" target="_blank">Export CSV <span>→</span></a>
+        </form>
+
+        <div class="admin-summary-cards">
+          <div class="admin-summary-card">
+            <p class="admin-hint">Total revenue</p>
+            <strong id="summaryRevenue">₹0</strong>
+          </div>
+          <div class="admin-summary-card">
+            <p class="admin-hint">Orders</p>
+            <strong id="summaryCount">0</strong>
+          </div>
+          <div class="admin-summary-card admin-summary-wide">
+            <p class="admin-hint">Top products</p>
+            <ul id="summaryTopProducts" class="admin-top-products"></ul>
+          </div>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="admin-modal" id="productModal" hidden>
+    <div class="admin-modal-overlay" id="productModalOverlay"></div>
+    <div class="admin-modal-panel">
+      <h3 id="productModalTitle">Add product</h3>
+      <form id="productForm" class="admin-form">
+        <input type="hidden" id="productId">
+        <label>Name<input type="text" id="productName" required></label>
+        <label>Description<textarea id="productDescription" rows="2"></textarea></label>
+        <label>Price (₹)<input type="number" id="productPrice" min="0" required></label>
+        <label>Discount %<input type="number" id="productDiscount" min="0" max="100" value="0"></label>
+        <label>Image URL (or ph-1..ph-6 for a placeholder)<input type="text" id="productImage" placeholder="images/example.jpg"></label>
+        <label class="admin-checkbox"><input type="checkbox" id="productFeatured"> Featured on homepage</label>
+        <label class="admin-checkbox"><input type="checkbox" id="productActive" checked> Active (visible on site)</label>
+        <div class="admin-modal-actions">
+          <button type="button" class="button button-outline" id="cancelProductButton">Cancel</button>
+          <button type="submit" class="button button-dark">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
