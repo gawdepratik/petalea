@@ -155,30 +155,33 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-document.getElementById("contactForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const form = event.target;
-  const submitButton = form.querySelector("button[type='submit']");
-  submitButton.disabled = true;
+const contactForm = document.getElementById("contactForm");
+if (contactForm) {
+  contactForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.target;
+    const submitButton = form.querySelector("button[type='submit']");
+    submitButton.disabled = true;
 
-  try {
-    const response = await fetch(form.action, {
-      method: "POST",
-      body: new FormData(form),
-      headers: { Accept: "application/json" }
-    });
+    try {
+      const response = await fetch(form.action, {
+        method: "POST",
+        body: new FormData(form),
+        headers: { Accept: "application/json" }
+      });
 
-    if (response.ok) {
-      showToast("Thank you! Your enquiry has been sent.");
-      form.reset();
-    } else {
+      if (response.ok) {
+        showToast("Thank you! Your enquiry has been sent.");
+        form.reset();
+      } else {
+        showToast("Something went wrong. Please email us directly.");
+      }
+    } catch {
       showToast("Something went wrong. Please email us directly.");
+    } finally {
+      submitButton.disabled = false;
     }
-  } catch {
-    showToast("Something went wrong. Please email us directly.");
-  } finally {
-    submitButton.disabled = false;
-  }
-});
+  });
+}
 
 renderCart();
