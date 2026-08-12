@@ -68,6 +68,7 @@
             <thead>
               <tr>
                 <th>Name</th>
+                <th>Category</th>
                 <th>Price</th>
                 <th>Discount</th>
                 <th>Featured</th>
@@ -129,9 +130,14 @@
         <input type="hidden" id="productId">
         <label>Name<input type="text" id="productName" required></label>
         <label>Description<textarea id="productDescription" rows="2"></textarea></label>
+        <label>Category
+          <input type="text" id="productCategory" list="categoryOptions" placeholder="e.g. Bouquets, Keychains">
+          <datalist id="categoryOptions"></datalist>
+        </label>
         <label>Price (₹)<input type="number" id="productPrice" min="0" required></label>
         <label>Discount %<input type="number" id="productDiscount" min="0" max="100" value="0"></label>
         <label>Image URL (or ph-1..ph-6 for a placeholder)<input type="text" id="productImage" placeholder="images/example.jpg"></label>
+        <div class="admin-image-preview" id="productImagePreview" hidden></div>
         <label class="admin-checkbox"><input type="checkbox" id="productFeatured"> Featured on homepage</label>
         <label class="admin-checkbox"><input type="checkbox" id="productActive" checked> Active (visible on site)</label>
         <div class="admin-modal-actions">

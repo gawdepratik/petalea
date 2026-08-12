@@ -18,6 +18,33 @@ const productModalTitle = document.getElementById("productModalTitle");
 const productForm = document.getElementById("productForm");
 const cancelProductButton = document.getElementById("cancelProductButton");
 const toast = document.getElementById("toast");
+const productCategory = document.getElementById("productCategory");
+const categoryOptions = document.getElementById("categoryOptions");
+const productImage = document.getElementById("productImage");
+const productImagePreview = document.getElementById("productImagePreview");
+
+const PLACEHOLDER_SWATCHES = {
+  "ph-1": "#cfb99e", "ph-2": "#b9c0a6", "ph-3": "#d6c2a8",
+  "ph-4": "#c99b85", "ph-5": "#a9a3b3", "ph-6": "#a9b596"
+};
+
+function updateImagePreview() {
+  const value = productImage.value.trim();
+  if (!value) {
+    productImagePreview.hidden = true;
+    productImagePreview.innerHTML = "";
+    return;
+  }
+
+  productImagePreview.hidden = false;
+  if (PLACEHOLDER_SWATCHES[value]) {
+    productImagePreview.innerHTML = `<span class="preview-fallback" style="width:100%;height:100%;display:grid;place-items:center;background:${PLACEHOLDER_SWATCHES[value]};color:#fff;">Placeholder: ${value}</span>`;
+  } else {
+    productImagePreview.innerHTML = `<img src="${value}" alt="Preview" onerror="this.replaceWith(Object.assign(document.createElement('span'), {className: 'preview-fallback', textContent: 'Image could not be loaded from this URL.'}))">`;
+  }
+}
+
+productImage.addEventListener("input", updateImagePreview);
 
 const dashboardTitle = document.getElementById("dashboardTitle");
 const tabProducts = document.getElementById("tabProducts");
@@ -127,6 +154,7 @@ function renderProducts(products) {
       (p) => `
         <tr data-id="${p.id}">
           <td>${p.name}</td>
+          <td>${p.category || "—"}</td>
           <td>₹${p.price}</td>
           <td>${p.discount_percent > 0 ? p.discount_percent + "%" : "—"}</td>
           <td><span class="admin-badge ${p.featured ? "on" : ""}">${p.featured ? "Featured" : "No"}</span></td>
@@ -141,6 +169,9 @@ function renderProducts(products) {
     .join("");
 
   productsTableBody.dataset.products = JSON.stringify(products);
+
+  const categories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
+  categoryOptions.innerHTML = categories.map((c) => `<option value="${c}"></option>`).join("");
 }
 
 function openProductModal(product) {
@@ -148,13 +179,15 @@ function openProductModal(product) {
   document.getElementById("productId").value = product ? product.id : "";
   document.getElementById("productName").value = product ? product.name : "";
   document.getElementById("productDescription").value = product ? product.description : "";
+  productCategory.value = product ? product.category : "";
   document.getElementById("productPrice").value = product ? product.price : "";
   document.getElementById("productDiscount").value = product ? product.discount_percent : 0;
-  document.getElementById("productImage").value = product ? product.image_url : "";
+  productImage.value = product ? product.image_url : "";
   document.getElementById("productFeatured").checked = product ? product.featured : false;
   document.getElementById("productActive").checked = product ? product.active : true;
   productModalTitle.textContent = product ? "Edit product" : "Add product";
   productModal.hidden = false;
+  updateImagePreview();
 }
 
 function closeProductModal() {
@@ -202,9 +235,10 @@ productForm.addEventListener("submit", async (event) => {
   const payload = {
     name: document.getElementById("productName").value.trim(),
     description: document.getElementById("productDescription").value.trim(),
+    category: productCategory.value.trim(),
     price: Number(document.getElementById("productPrice").value),
     discount_percent: Number(document.getElementById("productDiscount").value) || 0,
-    image_url: document.getElementById("productImage").value.trim(),
+    image_url: productImage.value.trim(),
     featured: document.getElementById("productFeatured").checked,
     active: document.getElementById("productActive").checked
   };
