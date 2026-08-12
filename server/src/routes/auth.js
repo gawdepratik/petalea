@@ -24,6 +24,11 @@ function getAdminEmails() {
     .filter(Boolean);
 }
 
+function cookieOptions() {
+  const secure = process.env.COOKIE_SECURE !== "false";
+  return { httpOnly: true, secure, sameSite: secure ? "none" : "lax" };
+}
+
 router.post("/request-otp", async (req, res) => {
   const email = String(req.body.email || "").trim().toLowerCase();
   if (!email) {
@@ -83,20 +88,14 @@ router.post("/verify-otp", async (req, res) => {
 
   await pool.query("UPDATE otp_codes SET used = true WHERE id = $1", [record.id]);
 
-  const cookieSecure = process.env.COOKIE_SECURE !== "false";
   const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "8h" });
-  res.cookie("admin_session", token, {
-    httpOnly: true,
-    secure: cookieSecure,
-    sameSite: cookieSecure ? "none" : "lax",
-    maxAge: 8 * 60 * 60 * 1000
-  });
+  res.cookie("admin_session", token, { ...cookieOptions(), maxAge: 8 * 60 * 60 * 1000 });
 
   res.json({ ok: true, email });
 });
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("admin_session");
+  res.clearCookie("admin_session", cookieOptions());
   res.json({ ok: true });
 });
 
