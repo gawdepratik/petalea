@@ -5,6 +5,10 @@ const { sendMail } = require("../email");
 
 const router = express.Router();
 
+function formatOrderRef(id) {
+  return `PTL-${String(id).padStart(6, "0")}`;
+}
+
 function parseDateRange(query) {
   const from = query.from ? new Date(`${query.from}T00:00:00Z`) : null;
   const to = query.to ? new Date(`${query.to}T23:59:59Z`) : null;
@@ -72,14 +76,16 @@ router.post("/orders", async (req, res) => {
 
     await client.query("COMMIT");
 
-    const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim()).filter(Boolean);
+    const orderRef = formatOrderRef(orderId);
     const itemLines = lineItems.map((i) => `- ${i.name} x${i.quantity} (₹${i.unitPrice} each)`).join("\n");
+
+    const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim()).filter(Boolean);
     try {
       await Promise.all(
         adminEmails.map((to) =>
           sendMail({
             to,
-            subject: `New order #${orderId} — ₹${total}`,
+            subject: `New order ${orderRef} — ₹${total}`,
             text: `New order from ${customer_name} (${customer_email}, ${customer_phone}).\n\nItems:\n${itemLines}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}\nNotes: ${notes || "—"}`
           })
         )
@@ -88,7 +94,17 @@ router.post("/orders", async (req, res) => {
       console.error("Order notification email failed:", emailErr.message);
     }
 
-    res.status(201).json({ ok: true, orderId, total });
+    try {
+      await sendMail({
+        to: customer_email,
+        subject: `Your PETALÉA order ${orderRef} is confirmed`,
+        text: `Hi ${customer_name},\n\nThank you for your order! Your order reference is ${orderRef} — keep this for any questions about your order.\n\nItems:\n${itemLines}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}\n\nWe'll be in touch shortly to confirm delivery and payment.\n\n— PETALÉA`
+      });
+    } catch (emailErr) {
+      console.error("Customer confirmation email failed:", emailErr.message);
+    }
+
+    res.status(201).json({ ok: true, orderId, orderRef, total });
   } catch (err) {
     await client.query("ROLLBACK");
     console.error(err);
@@ -136,7 +152,59 @@ router.get("/admin/orders", requireAdmin, async (req, res) => {
     return acc;
   }, {});
 
-  res.json(orders.map((o) => ({ ...o, items: itemsByOrder[o.id] || [] })));
+  res.json(orders.map((o) => ({ ...o, orderRef: formatOrderRef(o.id), items: itemsByOrder[o.id] || [] })));
+});
+
+const VALID_STATUSES = ["new", "shipped", "completed", "cancelled"];
+
+router.put("/admin/orders/:id/status", requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { status, tracking_number = "" } = req.body;
+
+  if (!VALID_STATUSES.includes(status)) {
+    return res.status(400).json({ error: "Invalid status" });
+  }
+  if (status === "shipped" && !tracking_number.trim()) {
+    return res.status(400).json({ error: "Tracking number is required when marking as shipped" });
+  }
+
+  const { rows } = await pool.query(
+    `UPDATE orders SET status = $1, tracking_number = COALESCE(NULLIF($2, ''), tracking_number)
+     WHERE id = $3 RETURNING *`,
+    [status, tracking_number, id]
+  );
+
+  const order = rows[0];
+  if (!order) {
+    return res.status(404).json({ error: "Order not found" });
+  }
+
+  const orderRef = formatOrderRef(order.id);
+  const emailByStatus = {
+    shipped: {
+      subject: `Your PETALÉA order ${orderRef} has shipped`,
+      text: `Hi ${order.customer_name},\n\nGreat news — your order is on its way!\n\nTracking number: ${order.tracking_number}\n\nOrder reference: ${orderRef}\n\n— PETALÉA`
+    },
+    completed: {
+      subject: `Your PETALÉA order ${orderRef} has been delivered`,
+      text: `Hi ${order.customer_name},\n\nYour order (${orderRef}) has been marked as delivered. We hope you love it!\n\nThank you for shopping with PETALÉA.\n\n— PETALÉA`
+    },
+    cancelled: {
+      subject: `Your PETALÉA order ${orderRef} has been cancelled`,
+      text: `Hi ${order.customer_name},\n\nYour order (${orderRef}) has been cancelled. If this wasn't expected or you have any questions, please reply to this email and we'll sort it out.\n\nWe're sorry for the inconvenience.\n\n— PETALÉA`
+    }
+  };
+
+  const emailContent = emailByStatus[status];
+  if (emailContent) {
+    try {
+      await sendMail({ to: order.customer_email, ...emailContent });
+    } catch (emailErr) {
+      console.error("Status update email failed:", emailErr.message);
+    }
+  }
+
+  res.json({ ...order, orderRef });
 });
 
 router.get("/admin/reports/summary", requireAdmin, async (req, res) => {
@@ -190,18 +258,18 @@ router.get("/admin/reports/export.csv", requireAdmin, async (req, res) => {
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const { rows: orders } = await pool.query(
-    `SELECT id, created_at, customer_name, customer_email, customer_phone, subtotal, total, payment_status, status
+    `SELECT id, created_at, customer_name, customer_email, customer_phone, subtotal, total, payment_status, status, tracking_number
      FROM orders ${where} ORDER BY created_at DESC`,
     params
   );
 
   const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-  const header = ["Order ID", "Date", "Name", "Email", "Phone", "Subtotal", "Total", "Payment Status", "Order Status"];
+  const header = ["Order Ref", "Date", "Name", "Email", "Phone", "Subtotal", "Total", "Payment Status", "Order Status", "Tracking Number"];
   const lines = [header.join(",")];
 
   for (const o of orders) {
     lines.push(
-      [o.id, o.created_at.toISOString(), o.customer_name, o.customer_email, o.customer_phone, o.subtotal, o.total, o.payment_status, o.status]
+      [formatOrderRef(o.id), o.created_at.toISOString(), o.customer_name, o.customer_email, o.customer_phone, o.subtotal, o.total, o.payment_status, o.status, o.tracking_number]
         .map(escape)
         .join(",")
     );

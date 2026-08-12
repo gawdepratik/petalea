@@ -316,23 +316,65 @@ async function loadOrders() {
         .join("")
     : "<li>No sales yet.</li>";
 
+  const ORDER_STATUSES = ["new", "shipped", "completed", "cancelled"];
+
   const orders = await ordersResponse.json();
   ordersTableBody.innerHTML = orders.length
     ? orders
         .map(
           (o) => `
-            <tr>
+            <tr data-id="${o.id}">
+              <td>${o.orderRef}</td>
               <td>${new Date(o.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
               <td>${o.customer_name}<br><span class="admin-hint">${o.customer_phone}</span></td>
               <td>${o.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}</td>
               <td>${formatPrice(o.total)}</td>
               <td><span class="admin-badge ${o.payment_status === "paid" ? "on" : ""}">${o.payment_status}</span></td>
+              <td>
+                <select class="order-status-select" data-id="${o.id}">
+                  ${ORDER_STATUSES.map((s) => `<option value="${s}" ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}
+                </select>
+              </td>
+              <td>${o.tracking_number || "—"}</td>
             </tr>
           `
         )
         .join("")
-    : `<tr><td colspan="5">No orders in this range yet.</td></tr>`;
+    : `<tr><td colspan="8">No orders in this range yet.</td></tr>`;
 }
+
+ordersTableBody.addEventListener("change", async (event) => {
+  const select = event.target.closest(".order-status-select");
+  if (!select) return;
+
+  const id = select.dataset.id;
+  const status = select.value;
+  let tracking_number = "";
+
+  if (status === "shipped") {
+    tracking_number = (prompt("Enter the tracking/shipping number for this order:") || "").trim();
+    if (!tracking_number) {
+      showToast("Tracking number is required to mark an order as shipped.");
+      loadOrders();
+      return;
+    }
+  }
+
+  const response = await api(`/api/admin/orders/${id}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status, tracking_number })
+  });
+
+  if (!response.ok) {
+    showError(adminError, "Could not update order status.");
+    loadOrders();
+    return;
+  }
+
+  hideError(adminError);
+  showToast(`Order marked as ${status}. Customer notified by email.`);
+  loadOrders();
+});
 
 reportFilterForm.addEventListener("submit", (event) => {
   event.preventDefault();

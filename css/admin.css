@@ -86,6 +86,11 @@
 }
 .admin-badge.on { background: rgba(111,125,94,.15); color: var(--sage); }
 
+.order-status-select {
+  font-family: var(--sans); font-size: 12px; text-transform: capitalize; padding: 6px 10px;
+  border: 1px solid var(--line); border-radius: 3px; background: var(--white); color: var(--espresso); cursor: pointer;
+}
+
 .admin-modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; }
 .admin-modal[hidden] { display: none; }
 .admin-modal-overlay { position: absolute; inset: 0; background: rgba(25,20,17,.42); }

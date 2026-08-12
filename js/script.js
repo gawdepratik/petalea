@@ -188,6 +188,9 @@ checkoutFormView.addEventListener("submit", async (event) => {
 
     if (!response.ok) throw new Error("Order failed");
 
+    const result = await response.json();
+    document.getElementById("orderRefDisplay").textContent = result.orderRef;
+
     cart.length = 0;
     renderCart();
     checkoutFormView.reset();

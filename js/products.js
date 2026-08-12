@@ -39,9 +39,41 @@
     `;
   }
 
+  function renderGrid(grid, products) {
+    grid.innerHTML = products.length
+      ? products.map(productCardMarkup).join("")
+      : '<p class="empty-cart">More creations are on their way — check back soon.</p>';
+  }
+
+  function setupCategoryFilters(filterBar, allGrid, products) {
+    const categories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
+    if (!categories.length) {
+      filterBar.hidden = true;
+      return;
+    }
+
+    filterBar.hidden = false;
+    filterBar.innerHTML = ["All", ...categories]
+      .map((c, i) => `<button class="category-filter-btn${i === 0 ? " active" : ""}" data-category="${c}">${c}</button>`)
+      .join("");
+
+    filterBar.addEventListener("click", (event) => {
+      const button = event.target.closest(".category-filter-btn");
+      if (!button) return;
+
+      filterBar.querySelectorAll(".category-filter-btn").forEach((b) => b.classList.remove("active"));
+      button.classList.add("active");
+
+      const category = button.dataset.category;
+      const filtered = category === "All" ? products : products.filter((p) => p.category === category);
+      renderGrid(allGrid, filtered);
+    });
+  }
+
   async function loadProducts() {
     const featuredGrid = document.getElementById("featured-grid");
     const allGrid = document.getElementById("all-grid");
+    const categoryFilters = document.getElementById("categoryFilters");
     if (!featuredGrid && !allGrid) return;
 
     try {
@@ -51,14 +83,13 @@
 
       if (featuredGrid) {
         const featured = products.filter((p) => p.featured);
-        featuredGrid.innerHTML = featured.map(productCardMarkup).join("");
+        renderGrid(featuredGrid, featured);
       }
 
       if (allGrid) {
         const rest = products.filter((p) => !p.featured);
-        allGrid.innerHTML = rest.length
-          ? rest.map(productCardMarkup).join("")
-          : '<p class="empty-cart">More creations are on their way — check back soon.</p>';
+        renderGrid(allGrid, rest);
+        if (categoryFilters) setupCategoryFilters(categoryFilters, allGrid, rest);
       }
 
       document.dispatchEvent(new CustomEvent("products:loaded"));

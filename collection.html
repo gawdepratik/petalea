@@ -53,6 +53,7 @@
 
     <section class="collection section-pad" style="padding-top: 40px;">
       <div class="container">
+        <div class="category-filters" id="categoryFilters" hidden></div>
         <div class="product-grid" id="all-grid"></div>
       </div>
     </section>
@@ -92,6 +93,7 @@
       <div id="orderConfirmationView" class="order-confirmation" hidden>
         <h3>Thank you!</h3>
         <p>Your order has been received. We'll reach out shortly to confirm delivery and payment details.</p>
+        <p class="order-ref">Order reference<strong id="orderRefDisplay"></strong></p>
         <button class="button button-dark" id="continueShoppingButton">Continue shopping</button>
       </div>
     </aside>
