@@ -213,39 +213,14 @@ p { color: var(--brown); }
 
 .product-card { transition: transform .4s var(--ease); }
 .product-card:hover { transform: translateY(-6px); }
+.product-card { overflow: hidden; border-radius: 2px 2px 60px 2px; }
 
-.product-image {
-  height: 440px; position: relative; overflow: hidden;
-  display: grid; place-items: end; padding: 22px;
-  border-radius: 2px 2px 60px 2px;
+.product-card img {
+  width: 100%; height: 440px; object-fit: cover; object-position: center;
+  display: block; border-radius: 2px 2px 60px 2px;
+  transition: transform .5s var(--ease);
 }
-.product-image span {
-  position: relative; z-index: 2; font-size: 10px; letter-spacing: .22em;
-  color: var(--paper); font-weight: 600;
-}
-.image-one { background:
-  radial-gradient(circle at 45% 33%, rgba(181,88,60,.55) 0 15%, transparent 16%),
-  radial-gradient(circle at 66% 52%, rgba(200,161,90,.45) 0 12%, transparent 13%),
-  linear-gradient(150deg,#e9dccc,#cfb99e); }
-.image-two { background:
-  radial-gradient(circle at 34% 36%, rgba(111,125,94,.55) 0 15%, transparent 16%),
-  radial-gradient(circle at 66% 62%, rgba(207,157,143,.5) 0 14%, transparent 15%),
-  linear-gradient(150deg,#e2ddc9,#b9c0a6); }
-.image-three { background:
-  radial-gradient(circle at 50% 33%, rgba(200,161,90,.5) 0 13%, transparent 14%),
-  radial-gradient(circle at 63% 58%, rgba(181,88,60,.45) 0 13%, transparent 14%),
-  linear-gradient(150deg,#ece0cd,#d6c2a8); }
-
-.product-image::after {
-  content: "PETALÉA"; position: absolute; inset: 0; display: grid; place-items: center;
-  font-family: var(--serif); font-size: 48px; font-style: italic; letter-spacing: .04em;
-  color: rgba(255,253,249,.5); text-align: center;
-}
-.product-image::before {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(0deg, rgba(43,34,27,.35), transparent 45%);
-  z-index: 1;
-}
+.product-card:hover img { transform: scale(1.04); }
 .product-info { padding: 22px 3px; }
 .product-info h3 { font-size: 29px; }
 .product-info p { font-size: 13px; margin: 6px 0 20px; }
@@ -405,7 +380,7 @@ p { color: var(--brown); }
   .story-grid { grid-template-columns: 1fr; gap: 50px; }
   .hero-copy { padding: 60px 0; }
   .product-grid { grid-template-columns: 1fr 1fr; }
-  .product-image { height: 360px; }
+  .product-card img { height: 360px; }
   .occasion-grid { grid-template-columns: 1fr 1fr; }
   .occasion-grid > div:nth-child(2) { border-right: 0; }
   .occasion-grid > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
@@ -422,7 +397,7 @@ p { color: var(--brown); }
   .hero-text { font-size: 15.5px; }
   .hero-actions { align-items: flex-start; flex-direction: column; gap: 20px; }
   .product-grid { grid-template-columns: 1fr; }
-  .product-image { height: 420px; }
+  .product-card img { height: 420px; }
   .story-visual { min-height: 420px; }
   .story-frame { height: 390px; }
   .occasion-grid { grid-template-columns: 1fr; }
