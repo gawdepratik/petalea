@@ -3,23 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="PETALÉA — Browse the full collection of handcrafted flowers that last.">
-  <title>Full Collection | PETALÉA</title>
-  <link rel="canonical" href="https://petalea.in/collection.html">
+  <meta name="description" content="PETALÉA — Track your order status.">
+  <title>Track Your Order | PETALÉA</title>
+  <link rel="canonical" href="https://petalea.in/order-lookup.html">
 
   <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#2b221b">
-
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="PETALÉA">
-  <meta property="og:title" content="Full Collection | PETALÉA">
-  <meta property="og:description" content="Browse the full collection of handcrafted flowers that last.">
-  <meta property="og:url" content="https://petalea.in/collection.html">
-  <meta property="og:image" content="https://petalea.in/images/hero-bouquet.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Full Collection | PETALÉA">
-  <meta name="twitter:description" content="Browse the full collection of handcrafted flowers that last.">
-  <meta name="twitter:image" content="https://petalea.in/images/hero-bouquet.png">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,16 +34,30 @@
   <main>
     <section class="page-intro">
       <div class="container">
-        <p class="breadcrumb"><a href="index.html">Home</a> / Full Collection</p>
-        <p class="eyebrow">THE FULL COLLECTION</p>
-        <h2>Every PETALÉA creation.</h2>
+        <p class="breadcrumb"><a href="index.html">Home</a> / Track Order</p>
+        <p class="eyebrow">TRACK YOUR ORDER</p>
+        <h2>Where's my bloom?</h2>
       </div>
     </section>
 
-    <section class="collection section-pad" style="padding-top: 40px;">
-      <div class="container">
-        <div class="category-filters" id="categoryFilters" hidden></div>
-        <div class="product-grid" id="all-grid"></div>
+    <section class="section-pad" style="padding-top: 40px;">
+      <div class="container narrow">
+        <form id="lookupForm" class="contact-form">
+          <label>Order reference<input type="text" id="lookupRef" required placeholder="PTL-000123"></label>
+          <label>Email used at checkout<input type="email" id="lookupEmail" required placeholder="you@example.com"></label>
+          <button class="button button-dark" type="submit">Track order</button>
+        </form>
+
+        <p id="lookupError" class="lookup-error" hidden></p>
+
+        <div id="lookupResult" class="lookup-result" hidden>
+          <p class="eyebrow" id="resultRef"></p>
+          <h3 id="resultStatus"></h3>
+          <p id="resultTracking" class="lookup-line" hidden></p>
+          <p id="resultRefund" class="lookup-line" hidden></p>
+          <ul id="resultItems" class="lookup-items"></ul>
+          <p class="lookup-total">Total<strong id="resultTotal"></strong></p>
+        </div>
       </div>
     </section>
   </main>
@@ -94,7 +97,6 @@
         <h3>Thank you!</h3>
         <p>Your order has been received. We'll reach out shortly to confirm delivery and payment details.</p>
         <p class="order-ref">Order reference<strong id="orderRefDisplay"></strong></p>
-        <p class="admin-hint">You can check your order status anytime on the <a class="text-link" href="order-lookup.html">Track Order</a> page.</p>
         <button class="button button-dark" id="continueShoppingButton">Continue shopping</button>
       </div>
     </aside>
@@ -102,7 +104,7 @@
 
   <div class="toast" id="toast">Added to your cart.</div>
   <script src="js/config.js"></script>
-  <script src="js/products.js"></script>
   <script src="js/script.js"></script>
+  <script src="js/order-lookup.js"></script>
 </body>
 </html>

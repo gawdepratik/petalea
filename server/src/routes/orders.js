@@ -155,11 +155,11 @@ router.get("/admin/orders", requireAdmin, async (req, res) => {
   res.json(orders.map((o) => ({ ...o, orderRef: formatOrderRef(o.id), items: itemsByOrder[o.id] || [] })));
 });
 
-const VALID_STATUSES = ["new", "shipped", "completed", "cancelled"];
+const VALID_STATUSES = ["new", "confirmed", "shipped", "completed", "cancelled"];
 
 router.put("/admin/orders/:id/status", requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { status, tracking_number = "" } = req.body;
+  const { status, tracking_number = "", refund_amount, refund_note = "" } = req.body;
 
   if (!VALID_STATUSES.includes(status)) {
     return res.status(400).json({ error: "Invalid status" });
@@ -168,10 +168,18 @@ router.put("/admin/orders/:id/status", requireAdmin, async (req, res) => {
     return res.status(400).json({ error: "Tracking number is required when marking as shipped" });
   }
 
+  const refundAmountNum = Number(refund_amount) || 0;
+  const refundStatus = status === "cancelled" && refundAmountNum > 0 ? "refunded" : undefined;
+
   const { rows } = await pool.query(
-    `UPDATE orders SET status = $1, tracking_number = COALESCE(NULLIF($2, ''), tracking_number)
-     WHERE id = $3 RETURNING *`,
-    [status, tracking_number, id]
+    `UPDATE orders SET
+       status = $1,
+       tracking_number = COALESCE(NULLIF($2, ''), tracking_number),
+       refund_amount = CASE WHEN $3 THEN $4 ELSE refund_amount END,
+       refund_note = CASE WHEN $3 THEN $5 ELSE refund_note END,
+       refund_status = CASE WHEN $6::text IS NOT NULL THEN $6 ELSE refund_status END
+     WHERE id = $7 RETURNING *`,
+    [status, tracking_number, status === "cancelled", refundAmountNum, refund_note, refundStatus ?? null, id]
   );
 
   const order = rows[0];
@@ -180,7 +188,15 @@ router.put("/admin/orders/:id/status", requireAdmin, async (req, res) => {
   }
 
   const orderRef = formatOrderRef(order.id);
+  const refundLine = order.refund_amount > 0
+    ? `\n\nA refund of ₹${order.refund_amount} will be processed${order.refund_note ? ` (${order.refund_note})` : ""}.`
+    : "";
+
   const emailByStatus = {
+    confirmed: {
+      subject: `Your PETALÉA order ${orderRef} is confirmed`,
+      text: `Hi ${order.customer_name},\n\nYour order (${orderRef}) has been confirmed and we're getting it ready.\n\n— PETALÉA`
+    },
     shipped: {
       subject: `Your PETALÉA order ${orderRef} has shipped`,
       text: `Hi ${order.customer_name},\n\nGreat news — your order is on its way!\n\nTracking number: ${order.tracking_number}\n\nOrder reference: ${orderRef}\n\n— PETALÉA`
@@ -191,7 +207,7 @@ router.put("/admin/orders/:id/status", requireAdmin, async (req, res) => {
     },
     cancelled: {
       subject: `Your PETALÉA order ${orderRef} has been cancelled`,
-      text: `Hi ${order.customer_name},\n\nYour order (${orderRef}) has been cancelled. If this wasn't expected or you have any questions, please reply to this email and we'll sort it out.\n\nWe're sorry for the inconvenience.\n\n— PETALÉA`
+      text: `Hi ${order.customer_name},\n\nYour order (${orderRef}) has been cancelled. If this wasn't expected or you have any questions, please reply to this email and we'll sort it out.${refundLine}\n\nWe're sorry for the inconvenience.\n\n— PETALÉA`
     }
   };
 
@@ -205,6 +221,42 @@ router.put("/admin/orders/:id/status", requireAdmin, async (req, res) => {
   }
 
   res.json({ ...order, orderRef });
+});
+
+router.get("/orders/lookup", async (req, res) => {
+  const ref = String(req.query.ref || "").trim().toUpperCase();
+  const email = String(req.query.email || "").trim().toLowerCase();
+  const match = ref.match(/^PTL-(\d+)$/);
+
+  if (!match || !email) {
+    return res.status(400).json({ error: "Enter a valid order reference and email" });
+  }
+
+  const { rows } = await pool.query(
+    "SELECT * FROM orders WHERE id = $1 AND lower(customer_email) = $2",
+    [Number(match[1]), email]
+  );
+
+  const order = rows[0];
+  if (!order) {
+    return res.status(404).json({ error: "No matching order found. Check your reference and email." });
+  }
+
+  const { rows: items } = await pool.query(
+    "SELECT product_name, unit_price, quantity FROM order_items WHERE order_id = $1",
+    [order.id]
+  );
+
+  res.json({
+    orderRef: formatOrderRef(order.id),
+    status: order.status,
+    tracking_number: order.tracking_number,
+    total: order.total,
+    created_at: order.created_at,
+    refund_status: order.refund_status,
+    refund_amount: order.refund_amount,
+    items
+  });
 });
 
 router.get("/admin/reports/summary", requireAdmin, async (req, res) => {
@@ -258,18 +310,18 @@ router.get("/admin/reports/export.csv", requireAdmin, async (req, res) => {
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const { rows: orders } = await pool.query(
-    `SELECT id, created_at, customer_name, customer_email, customer_phone, subtotal, total, payment_status, status, tracking_number
+    `SELECT id, created_at, customer_name, customer_email, customer_phone, subtotal, total, payment_status, status, tracking_number, refund_status, refund_amount, refund_note
      FROM orders ${where} ORDER BY created_at DESC`,
     params
   );
 
   const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-  const header = ["Order Ref", "Date", "Name", "Email", "Phone", "Subtotal", "Total", "Payment Status", "Order Status", "Tracking Number"];
+  const header = ["Order Ref", "Date", "Name", "Email", "Phone", "Subtotal", "Total", "Payment Status", "Order Status", "Tracking Number", "Refund Status", "Refund Amount", "Refund Note"];
   const lines = [header.join(",")];
 
   for (const o of orders) {
     lines.push(
-      [formatOrderRef(o.id), o.created_at.toISOString(), o.customer_name, o.customer_email, o.customer_phone, o.subtotal, o.total, o.payment_status, o.status, o.tracking_number]
+      [formatOrderRef(o.id), o.created_at.toISOString(), o.customer_name, o.customer_email, o.customer_phone, o.subtotal, o.total, o.payment_status, o.status, o.tracking_number, o.refund_status, o.refund_amount, o.refund_note]
         .map(escape)
         .join(",")
     );

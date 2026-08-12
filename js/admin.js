@@ -316,7 +316,7 @@ async function loadOrders() {
         .join("")
     : "<li>No sales yet.</li>";
 
-  const ORDER_STATUSES = ["new", "shipped", "completed", "cancelled"];
+  const ORDER_STATUSES = ["new", "confirmed", "shipped", "completed", "cancelled"];
 
   const orders = await ordersResponse.json();
   ordersTableBody.innerHTML = orders.length
@@ -336,11 +336,12 @@ async function loadOrders() {
                 </select>
               </td>
               <td>${o.tracking_number || "—"}</td>
+              <td>${o.refund_amount > 0 ? `${formatPrice(o.refund_amount)}${o.refund_note ? `<br><span class="admin-hint">${o.refund_note}</span>` : ""}` : "—"}</td>
             </tr>
           `
         )
         .join("")
-    : `<tr><td colspan="8">No orders in this range yet.</td></tr>`;
+    : `<tr><td colspan="9">No orders in this range yet.</td></tr>`;
 }
 
 ordersTableBody.addEventListener("change", async (event) => {
@@ -350,6 +351,8 @@ ordersTableBody.addEventListener("change", async (event) => {
   const id = select.dataset.id;
   const status = select.value;
   let tracking_number = "";
+  let refund_amount = 0;
+  let refund_note = "";
 
   if (status === "shipped") {
     tracking_number = (prompt("Enter the tracking/shipping number for this order:") || "").trim();
@@ -360,9 +363,21 @@ ordersTableBody.addEventListener("change", async (event) => {
     }
   }
 
+  if (status === "cancelled") {
+    const amountInput = prompt("Refund amount for this cancelled order (₹, leave blank or 0 if none):", "0");
+    if (amountInput === null) {
+      loadOrders();
+      return;
+    }
+    refund_amount = Number(amountInput) || 0;
+    if (refund_amount > 0) {
+      refund_note = (prompt("Optional note about the refund (e.g. method, reference):") || "").trim();
+    }
+  }
+
   const response = await api(`/api/admin/orders/${id}/status`, {
     method: "PUT",
-    body: JSON.stringify({ status, tracking_number })
+    body: JSON.stringify({ status, tracking_number, refund_amount, refund_note })
   });
 
   if (!response.ok) {
