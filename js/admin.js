@@ -50,9 +50,11 @@ const dashboardTitle = document.getElementById("dashboardTitle");
 const tabProducts = document.getElementById("tabProducts");
 const tabOrders = document.getElementById("tabOrders");
 const tabPromo = document.getElementById("tabPromo");
+const tabReviews = document.getElementById("tabReviews");
 const productsPanel = document.getElementById("productsPanel");
 const ordersPanel = document.getElementById("ordersPanel");
 const promoPanel = document.getElementById("promoPanel");
+const reviewsPanel = document.getElementById("reviewsPanel");
 const reportFilterForm = document.getElementById("reportFilterForm");
 const filterFrom = document.getElementById("filterFrom");
 const filterTo = document.getElementById("filterTo");
@@ -306,18 +308,23 @@ function switchTab(tab) {
   tabProducts.classList.toggle("active", tab === "products");
   tabOrders.classList.toggle("active", tab === "orders");
   tabPromo.classList.toggle("active", tab === "promo");
+  tabReviews.classList.toggle("active", tab === "reviews");
   productsPanel.hidden = tab !== "products";
   ordersPanel.hidden = tab !== "orders";
   promoPanel.hidden = tab !== "promo";
-  dashboardTitle.textContent = tab === "orders" ? "Orders & Sales" : tab === "promo" ? "Promo Codes" : "Products";
+  reviewsPanel.hidden = tab !== "reviews";
+  dashboardTitle.textContent =
+    tab === "orders" ? "Orders & Sales" : tab === "promo" ? "Promo Codes" : tab === "reviews" ? "Reviews" : "Products";
 
   if (tab === "orders") loadOrders();
   if (tab === "promo") loadPromoCodes();
+  if (tab === "reviews") loadReviews();
 }
 
 tabProducts.addEventListener("click", () => switchTab("products"));
 tabOrders.addEventListener("click", () => switchTab("orders"));
 tabPromo.addEventListener("click", () => switchTab("promo"));
+tabReviews.addEventListener("click", () => switchTab("reviews"));
 
 async function loadOrders() {
   const query = currentFilterQuery();
@@ -369,7 +376,7 @@ function renderOrders() {
               <td>${o.orderRef}</td>
               <td>${new Date(o.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
               <td>${o.customer_name}<br><span class="admin-hint">${o.customer_phone}</span></td>
-              <td>${o.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}</td>
+              <td class="wrap-cell">${o.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}</td>
               <td>${formatPrice(o.total)}</td>
               <td><span class="admin-badge ${o.payment_status === "paid" ? "on" : ""}">${o.payment_status}</span></td>
               <td>
@@ -378,7 +385,7 @@ function renderOrders() {
                 </select>
               </td>
               <td>${o.tracking_number || "—"}</td>
-              <td>${o.refund_amount > 0 ? `${formatPrice(o.refund_amount)}${o.refund_note ? `<br><span class="admin-hint">${o.refund_note}</span>` : ""}` : "—"}</td>
+              <td class="wrap-cell">${o.refund_amount > 0 ? `${formatPrice(o.refund_amount)}${o.refund_note ? `<br><span class="admin-hint">${o.refund_note}</span>` : ""}` : "—"}</td>
               <td><button class="link-button" data-action="notes" data-id="${o.id}">${o.admin_notes ? "Edit notes" : "Add notes"}</button></td>
             </tr>
           `
@@ -704,6 +711,63 @@ promoForm.addEventListener("submit", async (event) => {
   closePromoModal();
   showToast(id ? "Promo code updated." : "Promo code created.");
   loadPromoCodes();
+});
+
+/* ---------------------------- Reviews ---------------------------- */
+const reviewsTableBody = document.getElementById("reviewsTableBody");
+
+function starString(rating) {
+  return "★".repeat(rating) + "☆".repeat(5 - rating);
+}
+
+async function loadReviews() {
+  const response = await api("/api/admin/reviews");
+  if (!response.ok) {
+    showError(adminError, "Could not load reviews.");
+    return;
+  }
+  hideError(adminError);
+  const reviews = await response.json();
+
+  reviewsTableBody.innerHTML = reviews.length
+    ? reviews
+        .map((r) => {
+          const actions = [];
+          if (r.status !== "approved") actions.push(`<button class="link-button" data-action="approved" data-id="${r.id}">Approve</button>`);
+          if (r.status !== "rejected") actions.push(`<button class="link-button" data-action="rejected" data-id="${r.id}">Reject</button>`);
+          if (r.status === "approved") actions.push(`<button class="link-button" data-action="pending" data-id="${r.id}">Unpublish</button>`);
+
+          return `
+            <tr>
+              <td>${r.product_name}</td>
+              <td>${r.customer_name}<br><span class="admin-hint">${r.customer_email}</span></td>
+              <td>${starString(r.rating)}</td>
+              <td class="wrap-cell">${r.review_text}</td>
+              <td><span class="admin-badge ${r.status === "approved" ? "on" : ""}">${r.status}</span></td>
+              <td class="admin-row-actions">${actions.join("")}</td>
+            </tr>
+          `;
+        })
+        .join("")
+    : `<tr><td colspan="6">No reviews yet.</td></tr>`;
+}
+
+reviewsTableBody.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const response = await api(`/api/admin/reviews/${button.dataset.id}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status: button.dataset.action })
+  });
+
+  if (!response.ok) {
+    showError(adminError, "Could not update that review.");
+    return;
+  }
+  hideError(adminError);
+  showToast("Review updated.");
+  loadReviews();
 });
 
 checkSession();

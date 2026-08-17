@@ -12,13 +12,13 @@
 </head>
 <body class="admin-body">
   <header class="site-header">
-    <div class="container nav-wrap">
+    <div class="admin-container nav-wrap">
       <a class="brand" href="index.html" aria-label="PETALÉA home">PETALÉA</a>
       <span class="admin-tag">Admin</span>
     </div>
   </header>
 
-  <main class="container admin-main">
+  <main class="admin-main">
     <section id="loginView" class="admin-card">
       <p class="eyebrow">ADMIN ACCESS</p>
       <h2>Sign in</h2>
@@ -53,6 +53,7 @@
             <button class="admin-tab active" id="tabProducts" type="button">Products</button>
             <button class="admin-tab" id="tabOrders" type="button">Orders &amp; Sales</button>
             <button class="admin-tab" id="tabPromo" type="button">Promo Codes</button>
+            <button class="admin-tab" id="tabReviews" type="button">Reviews</button>
           </div>
           <button class="button button-outline" id="logoutButton" type="button">Log out</button>
         </div>
@@ -160,6 +161,24 @@
               </tr>
             </thead>
             <tbody id="promoTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="reviewsPanel" hidden>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Reviewer</th>
+                <th>Rating</th>
+                <th>Review</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="reviewsTableBody"></tbody>
           </table>
         </div>
       </div>

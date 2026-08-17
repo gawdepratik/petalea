@@ -8,6 +8,7 @@ const authRoutes = require("./routes/auth");
 const productRoutes = require("./routes/products");
 const orderRoutes = require("./routes/orders");
 const promoCodeRoutes = require("./routes/promoCodes");
+const reviewRoutes = require("./routes/reviews");
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api", productRoutes);
 app.use("/api", orderRoutes);
 app.use("/api", promoCodeRoutes);
+app.use("/api", reviewRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

@@ -26,14 +26,17 @@
 
     const outOfStock = product.stock_quantity !== null && product.stock_quantity <= 0;
     const actionMarkup = outOfStock
-      ? `<span class="out-of-stock">Out of stock</span>`
+      ? `<form class="notify-form" data-product-id="${product.id}">
+          <input type="email" required placeholder="Email me when back">
+          <button type="submit">Notify me</button>
+        </form>`
       : `<button class="add-cart" data-id="${product.id}" data-product="${product.name}" data-price="${finalPrice}">Add to cart</button>`;
 
     return `
-      <article class="product-card${outOfStock ? " is-out-of-stock" : ""}">
-        ${productImageMarkup(product)}
+      <article class="product-card${outOfStock ? " is-out-of-stock" : ""}" data-id="${product.id}">
+        <div class="product-detail-trigger">${productImageMarkup(product)}</div>
         <div class="product-info">
-          <h3>${product.name}</h3>
+          <h3 class="product-detail-trigger">${product.name}</h3>
           <p>${product.description}</p>
           <div class="product-bottom">
             <span class="product-price">${priceMarkup}</span>
@@ -50,29 +53,60 @@
       : '<p class="empty-cart">More creations are on their way — check back soon.</p>';
   }
 
-  function setupCategoryFilters(filterBar, allGrid, products) {
-    const categories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
-    if (!categories.length) {
-      filterBar.hidden = true;
-      return;
+  function setupCollectionControls(filterBar, allGrid, products) {
+    const searchInput = document.getElementById("collectionSearch");
+    const sortSelect = document.getElementById("collectionSort");
+    const state = { category: "All", search: "", sort: "default" };
+
+    function apply() {
+      let list = state.category === "All" ? products : products.filter((p) => p.category === state.category);
+
+      if (state.search) {
+        const term = state.search.toLowerCase();
+        list = list.filter((p) => p.name.toLowerCase().includes(term));
+      }
+
+      if (state.sort === "price-asc") {
+        list = [...list].sort((a, b) => a.price - b.price);
+      } else if (state.sort === "price-desc") {
+        list = [...list].sort((a, b) => b.price - a.price);
+      } else if (state.sort === "newest") {
+        list = [...list].sort((a, b) => b.id - a.id);
+      }
+
+      renderGrid(allGrid, list);
     }
 
-    filterBar.hidden = false;
-    filterBar.innerHTML = ["All", ...categories]
-      .map((c, i) => `<button class="category-filter-btn${i === 0 ? " active" : ""}" data-category="${c}">${c}</button>`)
-      .join("");
+    const categories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
+    if (categories.length) {
+      filterBar.hidden = false;
+      filterBar.innerHTML = ["All", ...categories]
+        .map((c, i) => `<button class="category-filter-btn${i === 0 ? " active" : ""}" data-category="${c}">${c}</button>`)
+        .join("");
 
-    filterBar.addEventListener("click", (event) => {
-      const button = event.target.closest(".category-filter-btn");
-      if (!button) return;
+      filterBar.addEventListener("click", (event) => {
+        const button = event.target.closest(".category-filter-btn");
+        if (!button) return;
+        filterBar.querySelectorAll(".category-filter-btn").forEach((b) => b.classList.remove("active"));
+        button.classList.add("active");
+        state.category = button.dataset.category;
+        apply();
+      });
+    }
 
-      filterBar.querySelectorAll(".category-filter-btn").forEach((b) => b.classList.remove("active"));
-      button.classList.add("active");
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        state.search = searchInput.value.trim();
+        apply();
+      });
+    }
 
-      const category = button.dataset.category;
-      const filtered = category === "All" ? products : products.filter((p) => p.category === category);
-      renderGrid(allGrid, filtered);
-    });
+    if (sortSelect) {
+      sortSelect.addEventListener("change", () => {
+        state.sort = sortSelect.value;
+        apply();
+      });
+    }
   }
 
   async function loadProducts() {
@@ -94,16 +128,39 @@
       if (allGrid) {
         const rest = products.filter((p) => !p.featured);
         renderGrid(allGrid, rest);
-        if (categoryFilters) setupCategoryFilters(categoryFilters, allGrid, rest);
+        if (categoryFilters) setupCollectionControls(categoryFilters, allGrid, rest);
       }
 
-      document.dispatchEvent(new CustomEvent("products:loaded"));
+      document.dispatchEvent(new CustomEvent("products:loaded", { detail: products }));
     } catch (err) {
       const message = '<p class="empty-cart">Unable to load products right now. Please refresh the page.</p>';
       if (featuredGrid) featuredGrid.innerHTML = message;
       if (allGrid) allGrid.innerHTML = message;
     }
   }
+
+  document.addEventListener("submit", async (event) => {
+    const form = event.target.closest(".notify-form");
+    if (!form) return;
+    event.preventDefault();
+
+    const email = form.querySelector("input[type='email']").value.trim();
+    const button = form.querySelector("button");
+    button.disabled = true;
+
+    try {
+      const response = await fetch(`${API_BASE}/api/products/${form.dataset.productId}/notify-restock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      if (!response.ok) throw new Error("Request failed");
+      form.innerHTML = `<span class="out-of-stock">We'll email you when it's back.</span>`;
+    } catch {
+      button.disabled = false;
+      button.textContent = "Try again";
+    }
+  });
 
   loadProducts();
 })();

@@ -239,6 +239,17 @@ p { color: var(--brown); }
 .ph-5 { background: linear-gradient(150deg,#ddd9e6,#a9a3b3); }
 .ph-6 { background: linear-gradient(150deg,#e0e3d6,#a9b596); }
 
+.collection-controls { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+.collection-search {
+  flex: 1; min-width: 200px; font-family: var(--sans); font-size: 14px; padding: 11px 16px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--white); color: var(--espresso);
+}
+.collection-search:focus { outline: none; border-color: var(--terracotta); }
+.collection-sort {
+  font-family: var(--sans); font-size: 13px; padding: 11px 16px; border: 1px solid var(--line);
+  border-radius: 999px; background: var(--white); color: var(--espresso); cursor: pointer;
+}
+
 .category-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px; }
 .category-filters[hidden] { display: none; }
 .category-filter-btn {
@@ -281,6 +292,50 @@ p { color: var(--brown); }
 .out-of-stock {
   font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--brown-light);
   border: 1px solid var(--line); border-radius: 2px; padding: 8px 14px;
+}
+.product-detail-trigger { cursor: pointer; }
+
+.notify-form { display: flex; gap: 8px; }
+.notify-form input {
+  font-family: var(--sans); font-size: 12px; padding: 8px 10px; border: 1px solid var(--line);
+  border-radius: 2px; background: var(--ivory); color: var(--espresso); width: 150px;
+}
+.notify-form button {
+  border: 0; background: var(--espresso); color: var(--white); font-size: 11px; letter-spacing: .06em;
+  text-transform: uppercase; padding: 0 14px; border-radius: 2px; cursor: pointer;
+}
+
+.product-modal { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 24px; }
+.product-modal[hidden] { display: none; }
+.product-modal-overlay { position: absolute; inset: 0; background: rgba(25,20,17,.5); }
+.product-modal-panel {
+  position: relative; background: var(--paper); border-radius: 4px; box-shadow: var(--shadow-lg);
+  width: min(880px, 100%); max-height: 90vh; overflow-y: auto;
+  display: grid; grid-template-columns: 1fr 1fr;
+}
+.product-modal-close {
+  position: absolute; top: 14px; right: 18px; border: 0; background: none; font-size: 26px;
+  color: var(--brown); cursor: pointer; z-index: 1;
+}
+.product-modal-image img, .product-modal-image .product-placeholder { width: 100%; height: 100%; min-height: 320px; object-fit: cover; }
+.product-modal-info { padding: 40px; display: grid; gap: 4px; align-content: start; }
+.product-modal-info h3 { font-size: 32px; margin-bottom: 10px; }
+.product-modal-info > p { margin-bottom: 20px; }
+.product-modal-info .product-bottom { padding-top: 16px; border-top: 1px solid var(--line); margin-bottom: 8px; }
+
+.product-reviews { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.product-reviews h4 { font-family: var(--serif); font-size: 22px; font-weight: 500; margin-bottom: 14px; }
+.review-item { padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
+.review-item:last-child { border-bottom: 0; }
+.review-stars { color: var(--gold); letter-spacing: 2px; font-size: 14px; margin-bottom: 4px; }
+.review-item strong { display: block; font-size: 13px; margin-bottom: 4px; }
+.review-item p { font-size: 14px; }
+#toggleReviewForm { margin-top: 10px; }
+#reviewForm { margin-top: 16px; }
+
+@media (max-width: 720px) {
+  .product-modal-panel { grid-template-columns: 1fr; }
+  .product-modal-image img, .product-modal-image .product-placeholder { min-height: 220px; }
 }
 .add-cart {
   border: 0; background: none; border-bottom: 1px solid var(--espresso); padding-bottom: 3px;
@@ -458,6 +513,15 @@ p { color: var(--brown); }
   text-transform: uppercase; color: var(--brown);
 }
 .order-ref strong { font-family: var(--serif); font-size: 22px; letter-spacing: 0; text-transform: none; color: var(--espresso); }
+
+.whatsapp-float {
+  position: fixed; right: 24px; bottom: 24px; z-index: 90;
+  width: 56px; height: 56px; border-radius: 50%; background: #25D366; color: #fff;
+  display: grid; place-items: center; box-shadow: var(--shadow);
+  transition: transform .25s var(--ease);
+}
+.whatsapp-float:hover { transform: translateY(-3px); }
+.whatsapp-float[hidden] { display: none; }
 
 .toast {
   position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px);

@@ -27,6 +27,7 @@ async function createOrder({
   customer_phone,
   delivery_address = "",
   notes = "",
+  gift_message = "",
   items,
   promo_code = "",
   payment_status = "unpaid"
@@ -101,9 +102,9 @@ async function createOrder({
     const total = Math.max(0, subtotal - discountAmount);
 
     const { rows: orderRows } = await client.query(
-      `INSERT INTO orders (customer_name, customer_email, customer_phone, delivery_address, notes, subtotal, total, promo_code, discount_amount, payment_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-      [customer_name, customer_email, customer_phone, delivery_address, notes, subtotal, total, appliedPromoCode, discountAmount, payment_status]
+      `INSERT INTO orders (customer_name, customer_email, customer_phone, delivery_address, notes, gift_message, subtotal, total, promo_code, discount_amount, payment_status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+      [customer_name, customer_email, customer_phone, delivery_address, notes, gift_message, subtotal, total, appliedPromoCode, discountAmount, payment_status]
     );
     const orderId = orderRows[0].id;
 
@@ -147,10 +148,11 @@ router.post("/orders", async (req, res) => {
   }
 
   const { orderId, total, discountAmount, promoCode, lineItems } = result;
-  const { customer_name, customer_email, customer_phone, delivery_address = "", notes = "" } = req.body;
+  const { customer_name, customer_email, customer_phone, delivery_address = "", notes = "", gift_message = "" } = req.body;
   const orderRef = formatOrderRef(orderId);
   const itemLines = lineItems.map((i) => `- ${i.name} x${i.quantity} (₹${i.unitPrice} each)`).join("\n");
   const discountLine = discountAmount > 0 ? `\nDiscount (${promoCode}): -₹${discountAmount}` : "";
+  const giftLine = gift_message.trim() ? `\nGift message: ${gift_message.trim()}` : "";
 
   const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim()).filter(Boolean);
   try {
@@ -159,7 +161,7 @@ router.post("/orders", async (req, res) => {
         sendMail({
           to,
           subject: `New order ${orderRef} — ₹${total}`,
-          text: `New order from ${customer_name} (${customer_email}, ${customer_phone}).\n\nItems:\n${itemLines}${discountLine}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}\nNotes: ${notes || "—"}`
+          text: `New order from ${customer_name} (${customer_email}, ${customer_phone}).\n\nItems:\n${itemLines}${discountLine}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}\nNotes: ${notes || "—"}${giftLine}`
         })
       )
     );

@@ -1,6 +1,7 @@
 const express = require("express");
 const { pool } = require("../db");
 const { requireAdmin } = require("../middleware/requireAdmin");
+const { sendMail } = require("../email");
 
 const router = express.Router();
 
@@ -37,6 +38,9 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { name, description, price, discount_percent, image_url, featured, active, category, stock_quantity } = req.body;
 
+  const { rows: beforeRows } = await pool.query("SELECT stock_quantity FROM products WHERE id = $1", [id]);
+  const wasOutOfStock = beforeRows[0] && beforeRows[0].stock_quantity !== null && beforeRows[0].stock_quantity <= 0;
+
   const { rows } = await pool.query(
     `UPDATE products SET
        name = COALESCE($1, name),
@@ -56,7 +60,48 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
   if (!rows[0]) {
     return res.status(404).json({ error: "Product not found" });
   }
+
+  const nowInStock = rows[0].stock_quantity === null || rows[0].stock_quantity > 0;
+  if (wasOutOfStock && nowInStock) {
+    const { rows: subscribers } = await pool.query(
+      "SELECT id, email FROM stock_notifications WHERE product_id = $1 AND notified = false",
+      [id]
+    );
+    if (subscribers.length) {
+      try {
+        await Promise.all(
+          subscribers.map((s) =>
+            sendMail({
+              to: s.email,
+              subject: `${rows[0].name} is back in stock!`,
+              text: `Good news — "${rows[0].name}" is back in stock at PETALÉA.\n\nShop now before it sells out again: https://petalea.in/collection.html\n\n— PETALÉA`
+            })
+          )
+        );
+        await pool.query(
+          "UPDATE stock_notifications SET notified = true WHERE product_id = $1 AND notified = false",
+          [id]
+        );
+      } catch (emailErr) {
+        console.error("Back-in-stock email failed:", emailErr.message);
+      }
+    }
+  }
+
   res.json(rows[0]);
+});
+
+router.post("/products/:id/notify-restock", async (req, res) => {
+  const { email } = req.body;
+  if (!email || !email.trim()) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+
+  await pool.query(
+    "INSERT INTO stock_notifications (product_id, email) VALUES ($1, $2)",
+    [req.params.id, email.trim().toLowerCase()]
+  );
+  res.status(201).json({ ok: true });
 });
 
 router.delete("/admin/products/:id", requireAdmin, async (req, res) => {

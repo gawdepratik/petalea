@@ -25,6 +25,22 @@
   revealEls.forEach(el => observer.observe(el));
 })();
 
+(function initWhatsappButton() {
+  const button = document.getElementById("whatsappButton");
+  if (!button) return;
+
+  const hasNumber = typeof WHATSAPP_NUMBER !== "undefined" && WHATSAPP_NUMBER;
+  if (hasNumber) {
+    const message = encodeURIComponent("Hi! I'd like to know more about PETALÉA's handcrafted flowers.");
+    button.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+  } else {
+    button.removeAttribute("href");
+    button.style.cursor = "default";
+    button.addEventListener("click", (event) => event.preventDefault());
+  }
+  button.hidden = false;
+})();
+
 const cart = [];
 
 const cartButton = document.getElementById("cartButton");
@@ -246,6 +262,7 @@ checkoutFormView.addEventListener("submit", async (event) => {
     customer_email: document.getElementById("checkoutEmail").value.trim(),
     delivery_address: document.getElementById("checkoutAddress").value.trim(),
     notes: document.getElementById("checkoutNotes").value.trim(),
+    gift_message: document.getElementById("checkoutGiftMessage").value.trim(),
     items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
     promo_code: appliedPromo ? appliedPromo.code : ""
   };
