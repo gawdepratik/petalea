@@ -131,6 +131,8 @@ p { color: var(--brown); }
 }
 .main-nav a:hover { color: var(--espresso); }
 .main-nav a:hover::after { transform: scaleX(1); transform-origin: left; }
+.main-nav a.active-link { color: var(--espresso); }
+.main-nav a.active-link::after { transform: scaleX(1); transform-origin: left; }
 
 .cart-button {
   border: 1px solid var(--espresso); background: transparent; padding: 10px 18px;
@@ -286,6 +288,12 @@ p { color: var(--brown); }
 .product-info h3 { font-size: 29px; }
 .product-info p { font-size: 13px; margin: 6px 0 20px; }
 .product-bottom { display: flex; align-items: center; justify-content: space-between; }
+.card-review-link {
+  display: block; margin-top: 12px; border: 0; background: none; padding: 0; cursor: pointer;
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--brown); font-weight: 500;
+  border-bottom: 1px solid transparent; width: fit-content;
+}
+.card-review-link:hover { color: var(--terracotta); border-color: var(--terracotta); }
 .product-bottom strong { font-size: 15px; font-family: var(--serif); font-size: 20px; }
 .price-original { text-decoration: line-through; color: var(--brown-light); font-size: 13px; margin-left: 6px; }
 .product-card.is-out-of-stock img, .product-card.is-out-of-stock .product-placeholder { filter: grayscale(60%); opacity: .6; }

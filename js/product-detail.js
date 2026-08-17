@@ -58,7 +58,7 @@
     }
   }
 
-  function openModal(productId) {
+  function openModal(productId, options = {}) {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
@@ -92,6 +92,11 @@
 
     modal.hidden = false;
     loadReviews(productId);
+
+    if (options.focusReview) {
+      reviewForm.hidden = false;
+      setTimeout(() => reviewForm.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+    }
   }
 
   function closeModal() {
@@ -105,6 +110,12 @@
     const card = trigger.closest(".product-card");
     if (!card) return;
     openModal(Number(card.dataset.id));
+  });
+
+  document.addEventListener("click", (event) => {
+    const trigger = event.target.closest(".write-review-trigger");
+    if (!trigger) return;
+    openModal(Number(trigger.dataset.id), { focusReview: true });
   });
 
   overlay.addEventListener("click", closeModal);
