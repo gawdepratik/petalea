@@ -62,6 +62,7 @@
             <option value="price-desc">Price: High to Low</option>
             <option value="newest">Newest first</option>
           </select>
+          <button type="button" class="button button-outline" id="openWriteReview">Write a review</button>
         </div>
         <div class="category-filters" id="categoryFilters" hidden></div>
         <div class="product-grid" id="all-grid"></div>
@@ -137,25 +138,35 @@
         <div class="product-reviews">
           <h4>Reviews</h4>
           <div id="detailReviewsList"></div>
-          <button type="button" class="text-link" id="toggleReviewForm">Write a review</button>
-          <form id="reviewForm" class="checkout-form" hidden>
-            <label>Your name<input type="text" id="reviewName" required></label>
-            <label>Email (used to verify your purchase)<input type="email" id="reviewEmail" required></label>
-            <label>Rating
-              <select id="reviewRating">
-                <option value="5">★★★★★ Excellent</option>
-                <option value="4">★★★★☆ Good</option>
-                <option value="3">★★★☆☆ Okay</option>
-                <option value="2">★★☆☆☆ Poor</option>
-                <option value="1">★☆☆☆☆ Terrible</option>
-              </select>
-            </label>
-            <label>Review<textarea id="reviewText" rows="3" required></textarea></label>
-            <button type="submit" class="button button-dark">Submit review</button>
-          </form>
-          <p id="reviewFeedback" class="promo-feedback" hidden></p>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="product-modal" id="writeReviewModal" hidden>
+    <div class="product-modal-overlay" id="writeReviewOverlay"></div>
+    <div class="product-modal-panel">
+      <button class="product-modal-close" id="closeWriteReview" aria-label="Close">×</button>
+      <h3>Write a review</h3>
+      <form id="reviewForm" class="checkout-form">
+        <label>Product
+          <select id="reviewProductId" required></select>
+        </label>
+        <label>Your name<input type="text" id="reviewName" required></label>
+        <label>Email<input type="email" id="reviewEmail" required></label>
+        <label>Rating
+          <select id="reviewRating">
+            <option value="5">★★★★★ Excellent</option>
+            <option value="4">★★★★☆ Good</option>
+            <option value="3">★★★☆☆ Okay</option>
+            <option value="2">★★☆☆☆ Poor</option>
+            <option value="1">★☆☆☆☆ Terrible</option>
+          </select>
+        </label>
+        <label>Review<textarea id="reviewText" rows="3" required></textarea></label>
+        <button type="submit" class="button button-dark">Submit review</button>
+      </form>
+      <p id="reviewFeedback" class="promo-feedback" hidden></p>
     </div>
   </div>
 

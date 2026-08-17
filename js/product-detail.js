@@ -1,6 +1,7 @@
 (function () {
   const modal = document.getElementById("productDetailModal");
-  if (!modal) return;
+  const writeReviewModal = document.getElementById("writeReviewModal");
+  if (!modal && !writeReviewModal) return;
 
   const overlay = document.getElementById("productDetailOverlay");
   const closeButton = document.getElementById("closeProductDetail");
@@ -11,15 +12,23 @@
   const detailPrice = document.getElementById("detailPrice");
   const detailAction = document.getElementById("detailAction");
   const reviewsList = document.getElementById("detailReviewsList");
-  const toggleReviewForm = document.getElementById("toggleReviewForm");
+
+  const openWriteReviewButton = document.getElementById("openWriteReview");
+  const writeReviewOverlay = document.getElementById("writeReviewOverlay");
+  const closeWriteReviewButton = document.getElementById("closeWriteReview");
+  const reviewProductSelect = document.getElementById("reviewProductId");
   const reviewForm = document.getElementById("reviewForm");
   const reviewFeedback = document.getElementById("reviewFeedback");
 
   let products = [];
-  let currentProductId = null;
 
   document.addEventListener("products:loaded", (event) => {
     products = event.detail || [];
+    if (reviewProductSelect) {
+      reviewProductSelect.innerHTML = products
+        .map((p) => `<option value="${p.id}">${p.name}</option>`)
+        .join("");
+    }
   });
 
   function formatPrice(value) {
@@ -58,14 +67,9 @@
     }
   }
 
-  function openModal(productId, options = {}) {
+  function openModal(productId) {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
-
-    currentProductId = productId;
-    reviewForm.hidden = true;
-    reviewForm.reset();
-    reviewFeedback.hidden = true;
 
     detailImage.innerHTML = product.image_url && product.image_url.startsWith("ph-")
       ? `<div class="product-placeholder ${product.image_url}"><span>PETALÉA</span></div>`
@@ -92,79 +96,86 @@
 
     modal.hidden = false;
     loadReviews(productId);
-
-    if (options.focusReview) {
-      reviewForm.hidden = false;
-      setTimeout(() => reviewForm.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
-    }
   }
 
   function closeModal() {
     modal.hidden = true;
-    currentProductId = null;
   }
 
-  document.addEventListener("click", (event) => {
-    const trigger = event.target.closest(".product-detail-trigger");
-    if (!trigger) return;
-    const card = trigger.closest(".product-card");
-    if (!card) return;
-    openModal(Number(card.dataset.id));
-  });
+  if (modal) {
+    document.addEventListener("click", (event) => {
+      const trigger = event.target.closest(".product-detail-trigger");
+      if (!trigger) return;
+      const card = trigger.closest(".product-card");
+      if (!card) return;
+      openModal(Number(card.dataset.id));
+    });
 
-  document.addEventListener("click", (event) => {
-    const trigger = event.target.closest(".write-review-trigger");
-    if (!trigger) return;
-    openModal(Number(trigger.dataset.id), { focusReview: true });
-  });
+    overlay.addEventListener("click", closeModal);
+    closeButton.addEventListener("click", closeModal);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !modal.hidden) closeModal();
+    });
+  }
 
-  overlay.addEventListener("click", closeModal);
-  closeButton.addEventListener("click", closeModal);
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !modal.hidden) closeModal();
-  });
-
-  toggleReviewForm.addEventListener("click", () => {
-    reviewForm.hidden = !reviewForm.hidden;
-  });
-
-  reviewForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  function openWriteReviewModal() {
+    reviewForm.reset();
     reviewFeedback.hidden = true;
-    const submitButton = reviewForm.querySelector("button[type='submit']");
-    submitButton.disabled = true;
+    writeReviewModal.hidden = false;
+  }
 
-    const payload = {
-      customer_name: document.getElementById("reviewName").value.trim(),
-      customer_email: document.getElementById("reviewEmail").value.trim(),
-      rating: Number(document.getElementById("reviewRating").value),
-      review_text: document.getElementById("reviewText").value.trim()
-    };
+  function closeWriteReviewModal() {
+    writeReviewModal.hidden = true;
+  }
 
-    try {
-      const response = await fetch(`${API_BASE}/api/products/${currentProductId}/reviews`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const body = await response.json();
-
-      if (!response.ok) {
-        reviewFeedback.textContent = body.error || "Could not submit your review.";
-        reviewFeedback.className = "promo-feedback error";
-      } else {
-        reviewFeedback.textContent = "Thank you! Your review will appear once approved.";
-        reviewFeedback.className = "promo-feedback success";
-        reviewForm.reset();
-        reviewForm.hidden = true;
-      }
-      reviewFeedback.hidden = false;
-    } catch {
-      reviewFeedback.textContent = "Something went wrong. Please try again.";
-      reviewFeedback.className = "promo-feedback error";
-      reviewFeedback.hidden = false;
-    } finally {
-      submitButton.disabled = false;
+  if (writeReviewModal) {
+    if (openWriteReviewButton) {
+      openWriteReviewButton.addEventListener("click", openWriteReviewModal);
     }
-  });
+    writeReviewOverlay.addEventListener("click", closeWriteReviewModal);
+    closeWriteReviewButton.addEventListener("click", closeWriteReviewModal);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !writeReviewModal.hidden) closeWriteReviewModal();
+    });
+
+    reviewForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      reviewFeedback.hidden = true;
+      const submitButton = reviewForm.querySelector("button[type='submit']");
+      submitButton.disabled = true;
+
+      const productId = reviewProductSelect.value;
+      const payload = {
+        customer_name: document.getElementById("reviewName").value.trim(),
+        customer_email: document.getElementById("reviewEmail").value.trim(),
+        rating: Number(document.getElementById("reviewRating").value),
+        review_text: document.getElementById("reviewText").value.trim()
+      };
+
+      try {
+        const response = await fetch(`${API_BASE}/api/products/${productId}/reviews`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const body = await response.json();
+
+        if (!response.ok) {
+          reviewFeedback.textContent = body.error || "Could not submit your review.";
+          reviewFeedback.className = "promo-feedback error";
+        } else {
+          reviewFeedback.textContent = "Thank you! Your review will appear once approved.";
+          reviewFeedback.className = "promo-feedback success";
+          reviewForm.reset();
+        }
+        reviewFeedback.hidden = false;
+      } catch {
+        reviewFeedback.textContent = "Something went wrong. Please try again.";
+        reviewFeedback.className = "promo-feedback error";
+        reviewFeedback.hidden = false;
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+  }
 })();

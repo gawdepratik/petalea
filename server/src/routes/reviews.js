@@ -27,18 +27,6 @@ router.post("/products/:id/reviews", async (req, res) => {
     return res.status(400).json({ error: "Rating must be between 1 and 5" });
   }
 
-  const { rows: purchaseRows } = await pool.query(
-    `SELECT 1 FROM orders o
-     JOIN order_items oi ON oi.order_id = o.id
-     WHERE lower(o.customer_email) = lower($1) AND oi.product_id = $2 AND o.status != 'cancelled'
-     LIMIT 1`,
-    [customer_email, productId]
-  );
-
-  if (!purchaseRows.length) {
-    return res.status(403).json({ error: "Only customers who have purchased this product can leave a review." });
-  }
-
   const { rows } = await pool.query(
     `INSERT INTO reviews (product_id, customer_name, customer_email, rating, review_text)
      VALUES ($1, $2, $3, $4, $5) RETURNING *`,

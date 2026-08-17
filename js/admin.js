@@ -375,10 +375,11 @@ function renderOrders() {
             <tr data-id="${o.id}">
               <td>${o.orderRef}</td>
               <td>${new Date(o.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
-              <td>${o.customer_name}<br><span class="admin-hint">${o.customer_phone}</span></td>
+              <td class="wrap-cell">${o.customer_name}<br><span class="admin-hint">${o.customer_email}<br>${o.customer_phone}</span></td>
               <td class="wrap-cell">${o.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}</td>
               <td>${formatPrice(o.total)}</td>
               <td><span class="admin-badge ${o.payment_status === "paid" ? "on" : ""}">${o.payment_status}</span></td>
+              <td>${o.payment_method || "—"}</td>
               <td>
                 <select class="order-status-select" data-id="${o.id}">
                   ${ORDER_STATUSES.map((s) => `<option value="${s}" ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}
@@ -391,7 +392,7 @@ function renderOrders() {
           `
         )
         .join("")
-    : `<tr><td colspan="10">No orders match.</td></tr>`;
+    : `<tr><td colspan="11">No orders match.</td></tr>`;
 }
 
 orderSearch.addEventListener("input", renderOrders);

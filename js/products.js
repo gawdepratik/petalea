@@ -42,7 +42,6 @@
             <span class="product-price">${priceMarkup}</span>
             ${actionMarkup}
           </div>
-          <button type="button" class="card-review-link write-review-trigger" data-id="${product.id}">Write a review</button>
         </div>
       </article>
     `;
