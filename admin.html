@@ -52,6 +52,7 @@
           <div class="admin-tabs">
             <button class="admin-tab active" id="tabProducts" type="button">Products</button>
             <button class="admin-tab" id="tabOrders" type="button">Orders &amp; Sales</button>
+            <button class="admin-tab" id="tabPromo" type="button">Promo Codes</button>
           </div>
           <button class="button button-outline" id="logoutButton" type="button">Log out</button>
         </div>
@@ -61,6 +62,7 @@
 
       <div id="productsPanel">
         <div class="admin-actions admin-panel-actions">
+          <input type="search" id="productSearch" class="admin-search" placeholder="Search products by name or category…">
           <button class="button button-dark" id="newProductButton" type="button">Add product</button>
         </div>
         <div class="admin-table-wrap">
@@ -71,6 +73,7 @@
                 <th>Category</th>
                 <th>Price</th>
                 <th>Discount</th>
+                <th>Stock</th>
                 <th>Featured</th>
                 <th>Active</th>
                 <th></th>
@@ -85,6 +88,16 @@
         <form id="reportFilterForm" class="admin-filter-bar">
           <label>From<input type="date" id="filterFrom"></label>
           <label>To<input type="date" id="filterTo"></label>
+          <label>Status
+            <select id="filterStatus">
+              <option value="">All</option>
+              <option value="new">New</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="shipped">Shipped</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </label>
           <button class="button button-outline" type="submit">Filter</button>
           <a class="text-link" id="exportCsvLink" href="#" target="_blank">Export CSV <span>→</span></a>
         </form>
@@ -104,6 +117,11 @@
           </div>
         </div>
 
+        <div class="admin-actions admin-panel-actions">
+          <input type="search" id="orderSearch" class="admin-search" placeholder="Search by name, phone, email, or order ref…">
+          <button class="button button-dark" id="newOrderButton" type="button">Add order</button>
+        </div>
+
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
@@ -117,9 +135,31 @@
                 <th>Order Status</th>
                 <th>Tracking</th>
                 <th>Refund</th>
+                <th>Notes</th>
               </tr>
             </thead>
             <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="promoPanel" hidden>
+        <div class="admin-actions admin-panel-actions">
+          <button class="button button-dark" id="newPromoButton" type="button">Add promo code</button>
+        </div>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Discount</th>
+                <th>Uses</th>
+                <th>Expires</th>
+                <th>Active</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="promoTableBody"></tbody>
           </table>
         </div>
       </div>
@@ -140,12 +180,84 @@
         </label>
         <label>Price (₹)<input type="number" id="productPrice" min="0" required></label>
         <label>Discount %<input type="number" id="productDiscount" min="0" max="100" value="0"></label>
+        <label>Stock quantity (leave blank for unlimited/untracked)<input type="number" id="productStock" min="0" placeholder="e.g. 10"></label>
         <label>Image URL (or ph-1..ph-6 for a placeholder)<input type="text" id="productImage" placeholder="images/example.jpg"></label>
         <div class="admin-image-preview" id="productImagePreview" hidden></div>
         <label class="admin-checkbox"><input type="checkbox" id="productFeatured"> Featured on homepage</label>
         <label class="admin-checkbox"><input type="checkbox" id="productActive" checked> Active (visible on site)</label>
         <div class="admin-modal-actions">
           <button type="button" class="button button-outline" id="cancelProductButton">Cancel</button>
+          <button type="submit" class="button button-dark">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-modal" id="notesModal" hidden>
+    <div class="admin-modal-overlay" id="notesModalOverlay"></div>
+    <div class="admin-modal-panel">
+      <h3>Internal notes</h3>
+      <form id="notesForm" class="admin-form">
+        <input type="hidden" id="notesOrderId">
+        <label>Notes (only visible to admins)
+          <textarea id="notesText" rows="5" placeholder="e.g. Customer wants pink ribbon, allergic to lilies"></textarea>
+        </label>
+        <div class="admin-modal-actions">
+          <button type="button" class="button button-outline" id="cancelNotesButton">Cancel</button>
+          <button type="submit" class="button button-dark">Save notes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-modal" id="orderModal" hidden>
+    <div class="admin-modal-overlay" id="orderModalOverlay"></div>
+    <div class="admin-modal-panel">
+      <h3>Add order</h3>
+      <form id="orderForm" class="admin-form">
+        <label>Customer name<input type="text" id="orderName" required></label>
+        <label>Phone<input type="tel" id="orderPhone" required></label>
+        <label>Email<input type="email" id="orderEmail" required></label>
+        <label>Delivery address<textarea id="orderAddress" rows="2"></textarea></label>
+        <label>Customer-facing notes<textarea id="orderCustomerNotes" rows="2"></textarea></label>
+        <label>Payment status
+          <select id="orderPaymentStatus">
+            <option value="unpaid">Unpaid</option>
+            <option value="paid">Paid</option>
+          </select>
+        </label>
+
+        <div class="admin-order-items" id="manualOrderItems"></div>
+        <button type="button" class="text-link" id="addOrderItemButton">+ Add item</button>
+
+        <p class="admin-hint" id="manualOrderTotal"></p>
+        <div class="admin-modal-actions">
+          <button type="button" class="button button-outline" id="cancelOrderButton">Cancel</button>
+          <button type="submit" class="button button-dark">Create order</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-modal" id="promoModal" hidden>
+    <div class="admin-modal-overlay" id="promoModalOverlay"></div>
+    <div class="admin-modal-panel">
+      <h3 id="promoModalTitle">Add promo code</h3>
+      <form id="promoForm" class="admin-form">
+        <input type="hidden" id="promoId">
+        <label>Code<input type="text" id="promoCode" required placeholder="e.g. WELCOME10" style="text-transform: uppercase;"></label>
+        <label>Discount type
+          <select id="promoType">
+            <option value="percent">Percentage off</option>
+            <option value="flat">Flat amount off (₹)</option>
+          </select>
+        </label>
+        <label>Discount value<input type="number" id="promoValue" min="1" required></label>
+        <label>Max uses (leave blank for unlimited)<input type="number" id="promoMaxUses" min="1" placeholder="e.g. 50"></label>
+        <label>Expires on (leave blank for no expiry)<input type="date" id="promoExpiry"></label>
+        <label class="admin-checkbox"><input type="checkbox" id="promoActive" checked> Active</label>
+        <div class="admin-modal-actions">
+          <button type="button" class="button button-outline" id="cancelPromoButton">Cancel</button>
           <button type="submit" class="button button-dark">Save</button>
         </div>
       </form>

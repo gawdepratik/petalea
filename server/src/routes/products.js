@@ -4,7 +4,7 @@ const { requireAdmin } = require("../middleware/requireAdmin");
 
 const router = express.Router();
 
-const PUBLIC_COLUMNS = "id, name, description, price, discount_percent, image_url, featured, category";
+const PUBLIC_COLUMNS = "id, name, description, price, discount_percent, image_url, featured, category, stock_quantity";
 
 router.get("/products", async (req, res) => {
   const { rows } = await pool.query(
@@ -19,23 +19,23 @@ router.get("/admin/products", requireAdmin, async (req, res) => {
 });
 
 router.post("/admin/products", requireAdmin, async (req, res) => {
-  const { name, description = "", price, discount_percent = 0, image_url = "", featured = false, active = true, category = "" } = req.body;
+  const { name, description = "", price, discount_percent = 0, image_url = "", featured = false, active = true, category = "", stock_quantity = null } = req.body;
 
   if (!name || !Number.isFinite(Number(price))) {
     return res.status(400).json({ error: "name and price are required" });
   }
 
   const { rows } = await pool.query(
-    `INSERT INTO products (name, description, price, discount_percent, image_url, featured, active, category)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-    [name, description, price, discount_percent, image_url, featured, active, category]
+    `INSERT INTO products (name, description, price, discount_percent, image_url, featured, active, category, stock_quantity)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    [name, description, price, discount_percent, image_url, featured, active, category, stock_quantity]
   );
   res.status(201).json(rows[0]);
 });
 
 router.put("/admin/products/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, discount_percent, image_url, featured, active, category } = req.body;
+  const { name, description, price, discount_percent, image_url, featured, active, category, stock_quantity } = req.body;
 
   const { rows } = await pool.query(
     `UPDATE products SET
@@ -47,9 +47,10 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
        featured = COALESCE($6, featured),
        active = COALESCE($7, active),
        category = COALESCE($8, category),
+       stock_quantity = $9,
        updated_at = now()
-     WHERE id = $9 RETURNING *`,
-    [name, description, price, discount_percent, image_url, featured, active, category, id]
+     WHERE id = $10 RETURNING *`,
+    [name, description, price, discount_percent, image_url, featured, active, category, stock_quantity, id]
   );
 
   if (!rows[0]) {

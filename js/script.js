@@ -40,8 +40,17 @@ const menuToggle = document.querySelector(".menu-toggle");
 const mainNav = document.querySelector(".main-nav");
 const checkoutFormView = document.getElementById("checkoutFormView");
 const checkoutTotal = document.getElementById("checkoutTotal");
+const checkoutSubtotalRow = document.getElementById("checkoutSubtotalRow");
+const checkoutSubtotal = document.getElementById("checkoutSubtotal");
+const checkoutDiscountRow = document.getElementById("checkoutDiscountRow");
+const checkoutDiscount = document.getElementById("checkoutDiscount");
+const promoInput = document.getElementById("promoInput");
+const applyPromoButton = document.getElementById("applyPromoButton");
+const promoFeedback = document.getElementById("promoFeedback");
 const orderConfirmationView = document.getElementById("orderConfirmationView");
 const placeOrderButton = document.getElementById("placeOrderButton");
+
+let appliedPromo = null;
 
 function formatPrice(value) {
   return new Intl.NumberFormat("en-IN", {
@@ -137,13 +146,74 @@ function showCartView() {
   orderConfirmationView.hidden = true;
 }
 
+function cartSubtotal() {
+  return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+function updateCheckoutTotals() {
+  const subtotal = cartSubtotal();
+
+  if (appliedPromo) {
+    checkoutSubtotalRow.hidden = false;
+    checkoutDiscountRow.hidden = false;
+    checkoutSubtotal.textContent = formatPrice(subtotal);
+    checkoutDiscount.textContent = `-${formatPrice(appliedPromo.discountAmount)}`;
+    checkoutTotal.textContent = formatPrice(Math.max(0, subtotal - appliedPromo.discountAmount));
+  } else {
+    checkoutSubtotalRow.hidden = true;
+    checkoutDiscountRow.hidden = true;
+    checkoutTotal.textContent = formatPrice(subtotal);
+  }
+}
+
+function resetPromo() {
+  appliedPromo = null;
+  promoInput.value = "";
+  promoFeedback.hidden = true;
+  promoFeedback.className = "promo-feedback";
+}
+
 function showCheckoutForm() {
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  checkoutTotal.textContent = formatPrice(total);
+  resetPromo();
+  updateCheckoutTotals();
   cartView.hidden = true;
   checkoutFormView.hidden = false;
   orderConfirmationView.hidden = true;
 }
+
+applyPromoButton.addEventListener("click", async () => {
+  const code = promoInput.value.trim();
+  if (!code) return;
+
+  applyPromoButton.disabled = true;
+  try {
+    const response = await fetch(
+      `${API_BASE}/api/promo-codes/validate?code=${encodeURIComponent(code)}&subtotal=${cartSubtotal()}`
+    );
+    const body = await response.json();
+
+    if (!response.ok) {
+      appliedPromo = null;
+      promoFeedback.textContent = body.error || "That promo code isn't valid.";
+      promoFeedback.className = "promo-feedback error";
+      promoFeedback.hidden = false;
+      updateCheckoutTotals();
+      return;
+    }
+
+    appliedPromo = { code: body.code, discountAmount: body.discountAmount };
+    promoFeedback.textContent = `"${body.code}" applied — you saved ${formatPrice(body.discountAmount)}.`;
+    promoFeedback.className = "promo-feedback success";
+    promoFeedback.hidden = false;
+    updateCheckoutTotals();
+  } catch {
+    promoFeedback.textContent = "Could not check that code right now. Please try again.";
+    promoFeedback.className = "promo-feedback error";
+    promoFeedback.hidden = false;
+  } finally {
+    applyPromoButton.disabled = false;
+  }
+});
 
 function showOrderConfirmation() {
   cartView.hidden = true;
@@ -176,7 +246,8 @@ checkoutFormView.addEventListener("submit", async (event) => {
     customer_email: document.getElementById("checkoutEmail").value.trim(),
     delivery_address: document.getElementById("checkoutAddress").value.trim(),
     notes: document.getElementById("checkoutNotes").value.trim(),
-    items: cart.map(item => ({ id: item.id, quantity: item.quantity }))
+    items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+    promo_code: appliedPromo ? appliedPromo.code : ""
   };
 
   try {
@@ -194,6 +265,7 @@ checkoutFormView.addEventListener("submit", async (event) => {
     cart.length = 0;
     renderCart();
     checkoutFormView.reset();
+    resetPromo();
     showOrderConfirmation();
   } catch {
     showToast("Something went wrong placing your order. Please try again.");

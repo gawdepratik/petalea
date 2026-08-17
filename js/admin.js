@@ -49,16 +49,25 @@ productImage.addEventListener("input", updateImagePreview);
 const dashboardTitle = document.getElementById("dashboardTitle");
 const tabProducts = document.getElementById("tabProducts");
 const tabOrders = document.getElementById("tabOrders");
+const tabPromo = document.getElementById("tabPromo");
 const productsPanel = document.getElementById("productsPanel");
 const ordersPanel = document.getElementById("ordersPanel");
+const promoPanel = document.getElementById("promoPanel");
 const reportFilterForm = document.getElementById("reportFilterForm");
 const filterFrom = document.getElementById("filterFrom");
 const filterTo = document.getElementById("filterTo");
+const filterStatus = document.getElementById("filterStatus");
 const exportCsvLink = document.getElementById("exportCsvLink");
 const summaryRevenue = document.getElementById("summaryRevenue");
 const summaryCount = document.getElementById("summaryCount");
 const summaryTopProducts = document.getElementById("summaryTopProducts");
 const ordersTableBody = document.getElementById("ordersTableBody");
+const productSearch = document.getElementById("productSearch");
+const orderSearch = document.getElementById("orderSearch");
+const productStock = document.getElementById("productStock");
+
+let allProducts = [];
+let allOrders = [];
 
 let pendingEmail = "";
 
@@ -149,14 +158,23 @@ logoutButton.addEventListener("click", async () => {
 });
 
 function renderProducts(products) {
-  productsTableBody.innerHTML = products
-    .map(
-      (p) => `
+  allProducts = products;
+
+  const term = productSearch.value.trim().toLowerCase();
+  const visible = term
+    ? products.filter((p) => p.name.toLowerCase().includes(term) || (p.category || "").toLowerCase().includes(term))
+    : products;
+
+  productsTableBody.innerHTML = visible.length
+    ? visible
+        .map(
+          (p) => `
         <tr data-id="${p.id}">
           <td>${p.name}</td>
           <td>${p.category || "—"}</td>
           <td>₹${p.price}</td>
           <td>${p.discount_percent > 0 ? p.discount_percent + "%" : "—"}</td>
+          <td>${p.stock_quantity === null ? "Unlimited" : `<span class="admin-badge ${p.stock_quantity > 0 ? "on" : ""}">${p.stock_quantity}</span>`}</td>
           <td><span class="admin-badge ${p.featured ? "on" : ""}">${p.featured ? "Featured" : "No"}</span></td>
           <td><span class="admin-badge ${p.active ? "on" : ""}">${p.active ? "Active" : "Hidden"}</span></td>
           <td class="admin-row-actions">
@@ -165,14 +183,17 @@ function renderProducts(products) {
           </td>
         </tr>
       `
-    )
-    .join("");
+        )
+        .join("")
+    : `<tr><td colspan="8">No products match your search.</td></tr>`;
 
   productsTableBody.dataset.products = JSON.stringify(products);
 
   const categories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
   categoryOptions.innerHTML = categories.map((c) => `<option value="${c}"></option>`).join("");
 }
+
+productSearch.addEventListener("input", () => renderProducts(allProducts));
 
 function openProductModal(product) {
   productForm.reset();
@@ -182,6 +203,7 @@ function openProductModal(product) {
   productCategory.value = product ? product.category : "";
   document.getElementById("productPrice").value = product ? product.price : "";
   document.getElementById("productDiscount").value = product ? product.discount_percent : 0;
+  productStock.value = product && product.stock_quantity !== null ? product.stock_quantity : "";
   productImage.value = product ? product.image_url : "";
   document.getElementById("productFeatured").checked = product ? product.featured : false;
   document.getElementById("productActive").checked = product ? product.active : true;
@@ -238,6 +260,7 @@ productForm.addEventListener("submit", async (event) => {
     category: productCategory.value.trim(),
     price: Number(document.getElementById("productPrice").value),
     discount_percent: Number(document.getElementById("productDiscount").value) || 0,
+    stock_quantity: productStock.value.trim() === "" ? null : Number(productStock.value),
     image_url: productImage.value.trim(),
     featured: document.getElementById("productFeatured").checked,
     active: document.getElementById("productActive").checked
@@ -270,6 +293,7 @@ function currentFilterQuery() {
   const params = new URLSearchParams();
   if (filterFrom.value) params.set("from", filterFrom.value);
   if (filterTo.value) params.set("to", filterTo.value);
+  if (filterStatus.value) params.set("status", filterStatus.value);
   return params.toString();
 }
 
@@ -279,18 +303,21 @@ function updateExportLink() {
 }
 
 function switchTab(tab) {
-  const showOrders = tab === "orders";
-  tabOrders.classList.toggle("active", showOrders);
-  tabProducts.classList.toggle("active", !showOrders);
-  ordersPanel.hidden = !showOrders;
-  productsPanel.hidden = showOrders;
-  dashboardTitle.textContent = showOrders ? "Orders & Sales" : "Products";
+  tabProducts.classList.toggle("active", tab === "products");
+  tabOrders.classList.toggle("active", tab === "orders");
+  tabPromo.classList.toggle("active", tab === "promo");
+  productsPanel.hidden = tab !== "products";
+  ordersPanel.hidden = tab !== "orders";
+  promoPanel.hidden = tab !== "promo";
+  dashboardTitle.textContent = tab === "orders" ? "Orders & Sales" : tab === "promo" ? "Promo Codes" : "Products";
 
-  if (showOrders) loadOrders();
+  if (tab === "orders") loadOrders();
+  if (tab === "promo") loadPromoCodes();
 }
 
 tabProducts.addEventListener("click", () => switchTab("products"));
 tabOrders.addEventListener("click", () => switchTab("orders"));
+tabPromo.addEventListener("click", () => switchTab("promo"));
 
 async function loadOrders() {
   const query = currentFilterQuery();
@@ -318,7 +345,22 @@ async function loadOrders() {
 
   const ORDER_STATUSES = ["new", "confirmed", "shipped", "completed", "cancelled"];
 
-  const orders = await ordersResponse.json();
+  allOrders = await ordersResponse.json();
+  renderOrders();
+}
+
+function renderOrders() {
+  const ORDER_STATUSES = ["new", "confirmed", "shipped", "completed", "cancelled"];
+  const term = orderSearch.value.trim().toLowerCase();
+  const orders = term
+    ? allOrders.filter((o) =>
+        o.customer_name.toLowerCase().includes(term) ||
+        o.customer_phone.toLowerCase().includes(term) ||
+        o.customer_email.toLowerCase().includes(term) ||
+        o.orderRef.toLowerCase().includes(term)
+      )
+    : allOrders;
+
   ordersTableBody.innerHTML = orders.length
     ? orders
         .map(
@@ -337,12 +379,15 @@ async function loadOrders() {
               </td>
               <td>${o.tracking_number || "—"}</td>
               <td>${o.refund_amount > 0 ? `${formatPrice(o.refund_amount)}${o.refund_note ? `<br><span class="admin-hint">${o.refund_note}</span>` : ""}` : "—"}</td>
+              <td><button class="link-button" data-action="notes" data-id="${o.id}">${o.admin_notes ? "Edit notes" : "Add notes"}</button></td>
             </tr>
           `
         )
         .join("")
-    : `<tr><td colspan="9">No orders in this range yet.</td></tr>`;
+    : `<tr><td colspan="10">No orders match.</td></tr>`;
 }
+
+orderSearch.addEventListener("input", renderOrders);
 
 ordersTableBody.addEventListener("change", async (event) => {
   const select = event.target.closest(".order-status-select");
@@ -394,6 +439,271 @@ ordersTableBody.addEventListener("change", async (event) => {
 reportFilterForm.addEventListener("submit", (event) => {
   event.preventDefault();
   loadOrders();
+});
+
+/* ---------------------------- Internal order notes ---------------------------- */
+const notesModal = document.getElementById("notesModal");
+const notesModalOverlay = document.getElementById("notesModalOverlay");
+const notesForm = document.getElementById("notesForm");
+const notesOrderId = document.getElementById("notesOrderId");
+const notesText = document.getElementById("notesText");
+const cancelNotesButton = document.getElementById("cancelNotesButton");
+
+ordersTableBody.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-action='notes']");
+  if (!button) return;
+
+  const order = allOrders.find((o) => String(o.id) === button.dataset.id);
+  notesOrderId.value = order.id;
+  notesText.value = order.admin_notes || "";
+  notesModal.hidden = false;
+});
+
+function closeNotesModal() {
+  notesModal.hidden = true;
+}
+cancelNotesButton.addEventListener("click", closeNotesModal);
+notesModalOverlay.addEventListener("click", closeNotesModal);
+
+notesForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const response = await api(`/api/admin/orders/${notesOrderId.value}/notes`, {
+    method: "PUT",
+    body: JSON.stringify({ admin_notes: notesText.value.trim() })
+  });
+
+  if (!response.ok) {
+    showError(adminError, "Could not save notes.");
+    return;
+  }
+  hideError(adminError);
+  closeNotesModal();
+  showToast("Notes saved.");
+  loadOrders();
+});
+
+/* ---------------------------- Manual order entry ---------------------------- */
+const newOrderButton = document.getElementById("newOrderButton");
+const orderModal = document.getElementById("orderModal");
+const orderModalOverlay = document.getElementById("orderModalOverlay");
+const orderForm = document.getElementById("orderForm");
+const cancelOrderButton = document.getElementById("cancelOrderButton");
+const manualOrderItems = document.getElementById("manualOrderItems");
+const addOrderItemButton = document.getElementById("addOrderItemButton");
+const manualOrderTotal = document.getElementById("manualOrderTotal");
+
+function addManualOrderItemRow() {
+  const row = document.createElement("div");
+  row.className = "manual-order-item";
+  row.innerHTML = `
+    <select class="manual-item-product">
+      ${allProducts.filter((p) => p.active).map((p) => `<option value="${p.id}" data-price="${p.price}" data-discount="${p.discount_percent}">${p.name} — ₹${p.price}</option>`).join("")}
+    </select>
+    <input type="number" class="manual-item-qty" min="1" value="1">
+    <button type="button" aria-label="Remove item">×</button>
+  `;
+  row.querySelector("button").addEventListener("click", () => {
+    row.remove();
+    updateManualOrderTotal();
+  });
+  row.querySelector(".manual-item-product").addEventListener("change", updateManualOrderTotal);
+  row.querySelector(".manual-item-qty").addEventListener("input", updateManualOrderTotal);
+  manualOrderItems.appendChild(row);
+  updateManualOrderTotal();
+}
+
+function updateManualOrderTotal() {
+  let total = 0;
+  manualOrderItems.querySelectorAll(".manual-order-item").forEach((row) => {
+    const select = row.querySelector(".manual-item-product");
+    const option = select.options[select.selectedIndex];
+    if (!option) return;
+    const price = Number(option.dataset.price);
+    const discount = Number(option.dataset.discount);
+    const qty = Number(row.querySelector(".manual-item-qty").value) || 1;
+    total += Math.round(price * (1 - discount / 100)) * qty;
+  });
+  manualOrderTotal.textContent = `Total: ${formatPrice(total)}`;
+}
+
+addOrderItemButton.addEventListener("click", addManualOrderItemRow);
+
+newOrderButton.addEventListener("click", () => {
+  orderForm.reset();
+  manualOrderItems.innerHTML = "";
+  addManualOrderItemRow();
+  orderModal.hidden = false;
+});
+
+function closeOrderModal() {
+  orderModal.hidden = true;
+}
+cancelOrderButton.addEventListener("click", closeOrderModal);
+orderModalOverlay.addEventListener("click", closeOrderModal);
+
+orderForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const items = [...manualOrderItems.querySelectorAll(".manual-order-item")].map((row) => ({
+    id: Number(row.querySelector(".manual-item-product").value),
+    quantity: Number(row.querySelector(".manual-item-qty").value) || 1
+  }));
+
+  if (!items.length) {
+    showToast("Add at least one item to the order.");
+    return;
+  }
+
+  const payload = {
+    customer_name: document.getElementById("orderName").value.trim(),
+    customer_phone: document.getElementById("orderPhone").value.trim(),
+    customer_email: document.getElementById("orderEmail").value.trim(),
+    delivery_address: document.getElementById("orderAddress").value.trim(),
+    notes: document.getElementById("orderCustomerNotes").value.trim(),
+    payment_status: document.getElementById("orderPaymentStatus").value,
+    items
+  };
+
+  const response = await api("/api/admin/orders", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    showError(adminError, body.error || "Could not create order.");
+    return;
+  }
+
+  hideError(adminError);
+  closeOrderModal();
+  showToast("Order created.");
+  loadOrders();
+});
+
+/* ---------------------------- Promo codes ---------------------------- */
+const promoTableBody = document.getElementById("promoTableBody");
+const newPromoButton = document.getElementById("newPromoButton");
+const promoModal = document.getElementById("promoModal");
+const promoModalOverlay = document.getElementById("promoModalOverlay");
+const promoModalTitle = document.getElementById("promoModalTitle");
+const promoForm = document.getElementById("promoForm");
+const cancelPromoButton = document.getElementById("cancelPromoButton");
+
+async function loadPromoCodes() {
+  const response = await api("/api/admin/promo-codes");
+  if (!response.ok) {
+    showError(adminError, "Could not load promo codes.");
+    return;
+  }
+  hideError(adminError);
+  const codes = await response.json();
+
+  promoTableBody.innerHTML = codes.length
+    ? codes
+        .map((c) => {
+          const discountLabel = c.discount_type === "flat" ? `₹${c.discount_value} off` : `${c.discount_value}% off`;
+          const usesLabel = c.max_uses ? `${c.used_count} / ${c.max_uses}` : `${c.used_count} / ∞`;
+          const expiryLabel = c.expires_at ? new Date(c.expires_at).toLocaleDateString("en-IN") : "Never";
+          return `
+            <tr data-id="${c.id}">
+              <td>${c.code}</td>
+              <td>${discountLabel}</td>
+              <td>${usesLabel}</td>
+              <td>${expiryLabel}</td>
+              <td><span class="admin-badge ${c.active ? "on" : ""}">${c.active ? "Active" : "Inactive"}</span></td>
+              <td class="admin-row-actions">
+                <button class="link-button" data-action="edit">Edit</button>
+                <button class="link-button" data-action="delete">Delete</button>
+              </td>
+            </tr>
+          `;
+        })
+        .join("")
+    : `<tr><td colspan="6">No promo codes yet.</td></tr>`;
+
+  promoTableBody.dataset.codes = JSON.stringify(codes);
+}
+
+function openPromoModal(promo) {
+  promoForm.reset();
+  document.getElementById("promoId").value = promo ? promo.id : "";
+  document.getElementById("promoCode").value = promo ? promo.code : "";
+  document.getElementById("promoType").value = promo ? promo.discount_type : "percent";
+  document.getElementById("promoValue").value = promo ? promo.discount_value : "";
+  document.getElementById("promoMaxUses").value = promo && promo.max_uses ? promo.max_uses : "";
+  document.getElementById("promoExpiry").value = promo && promo.expires_at ? promo.expires_at.slice(0, 10) : "";
+  document.getElementById("promoActive").checked = promo ? promo.active : true;
+  promoModalTitle.textContent = promo ? "Edit promo code" : "Add promo code";
+  promoModal.hidden = false;
+}
+
+function closePromoModal() {
+  promoModal.hidden = true;
+}
+
+newPromoButton.addEventListener("click", () => openPromoModal(null));
+cancelPromoButton.addEventListener("click", closePromoModal);
+promoModalOverlay.addEventListener("click", closePromoModal);
+
+promoTableBody.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const row = button.closest("tr");
+  const id = row.dataset.id;
+  const codes = JSON.parse(promoTableBody.dataset.codes || "[]");
+  const promo = codes.find((c) => String(c.id) === id);
+
+  if (button.dataset.action === "edit") {
+    openPromoModal(promo);
+  } else if (button.dataset.action === "delete") {
+    deletePromoCode(id, promo.code);
+  }
+});
+
+async function deletePromoCode(id, code) {
+  if (!confirm(`Delete promo code "${code}"? This can't be undone.`)) return;
+
+  const response = await api(`/api/admin/promo-codes/${id}`, { method: "DELETE" });
+  if (!response.ok) {
+    showError(adminError, "Could not delete that promo code.");
+    return;
+  }
+  hideError(adminError);
+  showToast(`${code} deleted.`);
+  loadPromoCodes();
+}
+
+promoForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  hideError(adminError);
+
+  const id = document.getElementById("promoId").value;
+  const expiry = document.getElementById("promoExpiry").value;
+  const payload = {
+    code: document.getElementById("promoCode").value.trim(),
+    discount_type: document.getElementById("promoType").value,
+    discount_value: Number(document.getElementById("promoValue").value),
+    max_uses: document.getElementById("promoMaxUses").value ? Number(document.getElementById("promoMaxUses").value) : null,
+    expires_at: expiry ? new Date(`${expiry}T23:59:59`).toISOString() : null,
+    active: document.getElementById("promoActive").checked
+  };
+
+  const response = await api(id ? `/api/admin/promo-codes/${id}` : "/api/admin/promo-codes", {
+    method: id ? "PUT" : "POST",
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    showError(adminError, body.error || "Could not save that promo code.");
+    return;
+  }
+
+  closePromoModal();
+  showToast(id ? "Promo code updated." : "Promo code created.");
+  loadPromoCodes();
 });
 
 checkSession();

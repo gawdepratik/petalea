@@ -24,15 +24,20 @@
       ? `<strong>${formatPrice(finalPrice)}</strong> <span class="price-original">${formatPrice(product.price)}</span>`
       : `<strong>${formatPrice(product.price)}</strong>`;
 
+    const outOfStock = product.stock_quantity !== null && product.stock_quantity <= 0;
+    const actionMarkup = outOfStock
+      ? `<span class="out-of-stock">Out of stock</span>`
+      : `<button class="add-cart" data-id="${product.id}" data-product="${product.name}" data-price="${finalPrice}">Add to cart</button>`;
+
     return `
-      <article class="product-card">
+      <article class="product-card${outOfStock ? " is-out-of-stock" : ""}">
         ${productImageMarkup(product)}
         <div class="product-info">
           <h3>${product.name}</h3>
           <p>${product.description}</p>
           <div class="product-bottom">
             <span class="product-price">${priceMarkup}</span>
-            <button class="add-cart" data-id="${product.id}" data-product="${product.name}" data-price="${finalPrice}">Add to cart</button>
+            ${actionMarkup}
           </div>
         </div>
       </article>

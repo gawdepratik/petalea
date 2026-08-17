@@ -177,6 +177,15 @@
         <label>Email<input required type="email" id="checkoutEmail" placeholder="you@example.com"></label>
         <label>Delivery address<textarea required id="checkoutAddress" rows="3" placeholder="Where should we deliver this?"></textarea></label>
         <label>Notes (optional)<textarea id="checkoutNotes" rows="2" placeholder="Anything else we should know?"></textarea></label>
+
+        <div class="promo-row">
+          <input type="text" id="promoInput" placeholder="Promo code">
+          <button type="button" class="button button-outline" id="applyPromoButton">Apply</button>
+        </div>
+        <p id="promoFeedback" class="promo-feedback" hidden></p>
+
+        <div class="checkout-total" id="checkoutSubtotalRow" hidden><span>Subtotal</span><strong id="checkoutSubtotal">₹0</strong></div>
+        <div class="checkout-total" id="checkoutDiscountRow" hidden><span>Discount</span><strong id="checkoutDiscount">-₹0</strong></div>
         <div class="checkout-total"><span>Total</span><strong id="checkoutTotal">₹0</strong></div>
         <button class="button button-dark" type="submit" id="placeOrderButton">Place order</button>
         <p class="admin-hint">Payment is collected separately for now — we'll reach out to confirm delivery and payment.</p>
