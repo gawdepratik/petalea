@@ -25,7 +25,7 @@
   background: var(--paper); resize: vertical;
 }
 .admin-form input:focus, .admin-form textarea:focus { outline: none; border-color: var(--terracotta); }
-.admin-checkbox { display: flex; flex-direction: row; align-items: center; gap: 8px; }
+.admin-form label.admin-checkbox { display: flex; flex-direction: row; align-items: center; gap: 8px; }
 .admin-checkbox input { width: auto; }
 
 .admin-image-preview {
