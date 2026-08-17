@@ -327,6 +327,18 @@ p { color: var(--brown); }
 .product-modal-info > p { margin-bottom: 20px; }
 .product-modal-info .product-bottom { padding-top: 16px; border-top: 1px solid var(--line); margin-bottom: 8px; }
 
+.product-modal-panel-form {
+  grid-template-columns: 1fr; width: min(560px, 100%); padding: 48px 44px 40px;
+}
+.product-modal-panel-form h3 { font-size: 30px; margin-bottom: 22px; }
+.product-modal-panel-form .checkout-form { flex: none; overflow: visible; padding: 0; gap: 18px; }
+.checkout-form select {
+  font-family: var(--sans); font-size: 14px; text-transform: none; letter-spacing: normal;
+  padding: 11px 13px; border: 1px solid var(--line); border-radius: 3px; color: var(--espresso);
+  background: var(--ivory); cursor: pointer;
+}
+.checkout-form select:focus { outline: none; border-color: var(--terracotta); }
+
 .product-reviews { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
 .product-reviews h4 { font-family: var(--serif); font-size: 22px; font-weight: 500; margin-bottom: 14px; }
 .review-item { padding: 14px 0; border-bottom: 1px solid var(--line-soft); }

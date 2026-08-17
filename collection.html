@@ -145,8 +145,9 @@
 
   <div class="product-modal" id="writeReviewModal" hidden>
     <div class="product-modal-overlay" id="writeReviewOverlay"></div>
-    <div class="product-modal-panel">
+    <div class="product-modal-panel product-modal-panel-form">
       <button class="product-modal-close" id="closeWriteReview" aria-label="Close">×</button>
+      <p class="eyebrow">SHARE YOUR EXPERIENCE</p>
       <h3>Write a review</h3>
       <form id="reviewForm" class="checkout-form">
         <label>Product
@@ -163,7 +164,7 @@
             <option value="1">★☆☆☆☆ Terrible</option>
           </select>
         </label>
-        <label>Review<textarea id="reviewText" rows="3" required></textarea></label>
+        <label>Review<textarea id="reviewText" rows="4" required></textarea></label>
         <button type="submit" class="button button-dark">Submit review</button>
       </form>
       <p id="reviewFeedback" class="promo-feedback" hidden></p>
