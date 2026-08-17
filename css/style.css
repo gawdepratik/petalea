@@ -346,6 +346,17 @@ p { color: var(--brown); }
 .review-stars { color: var(--gold); letter-spacing: 2px; font-size: 14px; margin-bottom: 4px; }
 .review-item strong { display: block; font-size: 13px; margin-bottom: 4px; }
 .review-item p { font-size: 14px; }
+
+.reviews-summary {
+  display: flex; align-items: center; gap: 24px; margin-bottom: 36px; padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+.reviews-average { font-family: var(--serif); font-size: 56px; color: var(--espresso); line-height: 1; }
+.all-reviews-list .review-item { padding: 22px 0; }
+.all-review-product {
+  display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--brown); margin-bottom: 8px;
+}
 #toggleReviewForm { margin-top: 10px; }
 #reviewForm { margin-top: 16px; }
 

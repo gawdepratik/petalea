@@ -737,6 +737,7 @@ async function loadReviews() {
           if (r.status !== "approved") actions.push(`<button class="link-button" data-action="approved" data-id="${r.id}">Approve</button>`);
           if (r.status !== "rejected") actions.push(`<button class="link-button" data-action="rejected" data-id="${r.id}">Reject</button>`);
           if (r.status === "approved") actions.push(`<button class="link-button" data-action="pending" data-id="${r.id}">Unpublish</button>`);
+          actions.push(`<button class="link-button" data-action="delete" data-id="${r.id}">Delete</button>`);
 
           return `
             <tr>
@@ -756,6 +757,20 @@ async function loadReviews() {
 reviewsTableBody.addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
+
+  if (button.dataset.action === "delete") {
+    if (!confirm("Delete this review? This can't be undone.")) return;
+
+    const response = await api(`/api/admin/reviews/${button.dataset.id}`, { method: "DELETE" });
+    if (!response.ok) {
+      showError(adminError, "Could not delete that review.");
+      return;
+    }
+    hideError(adminError);
+    showToast("Review deleted.");
+    loadReviews();
+    return;
+  }
 
   const response = await api(`/api/admin/reviews/${button.dataset.id}/status`, {
     method: "PUT",

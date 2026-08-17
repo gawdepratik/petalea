@@ -174,16 +174,21 @@
         if (!response.ok) {
           reviewFeedback.textContent = body.error || "Could not submit your review.";
           reviewFeedback.className = "promo-feedback error";
+          reviewFeedback.hidden = false;
+          if (typeof showToast === "function") showToast(body.error || "Could not submit your review.");
         } else {
           reviewFeedback.textContent = "Thank you! Your review will appear once approved.";
           reviewFeedback.className = "promo-feedback success";
+          reviewFeedback.hidden = false;
+          if (typeof showToast === "function") showToast("Review submitted! It will appear once approved.");
           reviewForm.reset();
+          setTimeout(closeWriteReviewModal, 900);
         }
-        reviewFeedback.hidden = false;
       } catch {
         reviewFeedback.textContent = "Something went wrong. Please try again.";
         reviewFeedback.className = "promo-feedback error";
         reviewFeedback.hidden = false;
+        if (typeof showToast === "function") showToast("Something went wrong. Please try again.");
       } finally {
         submitButton.disabled = false;
       }

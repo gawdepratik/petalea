@@ -56,6 +56,16 @@ router.post("/products/:id/reviews", async (req, res) => {
   res.status(201).json({ ok: true, review: rows[0] });
 });
 
+router.get("/reviews", async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT r.customer_name, r.rating, r.review_text, r.created_at, p.name AS product_name, p.id AS product_id
+     FROM reviews r JOIN products p ON p.id = r.product_id
+     WHERE r.status = 'approved'
+     ORDER BY r.created_at DESC`
+  );
+  res.json(rows);
+});
+
 router.get("/admin/reviews", requireAdmin, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT r.*, p.name AS product_name
@@ -80,6 +90,14 @@ router.put("/admin/reviews/:id/status", requireAdmin, async (req, res) => {
     return res.status(404).json({ error: "Review not found" });
   }
   res.json(rows[0]);
+});
+
+router.delete("/admin/reviews/:id", requireAdmin, async (req, res) => {
+  const { rows } = await pool.query("DELETE FROM reviews WHERE id = $1 RETURNING id", [req.params.id]);
+  if (!rows[0]) {
+    return res.status(404).json({ error: "Review not found" });
+  }
+  res.json({ ok: true });
 });
 
 module.exports = router;
