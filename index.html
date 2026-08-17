@@ -236,7 +236,8 @@
       <h3>Write a review</h3>
       <form id="reviewForm" class="checkout-form">
         <label>Product
-          <select id="reviewProductId" required></select>
+          <input type="text" id="reviewProductId" list="reviewProductOptions" placeholder="Type to search for a product…" autocomplete="off" required>
+          <datalist id="reviewProductOptions"></datalist>
         </label>
         <label>Your name<input type="text" id="reviewName" required></label>
         <label>Email<input type="email" id="reviewEmail" required></label>

@@ -16,7 +16,8 @@
   const openWriteReviewButton = document.getElementById("openWriteReview");
   const writeReviewOverlay = document.getElementById("writeReviewOverlay");
   const closeWriteReviewButton = document.getElementById("closeWriteReview");
-  const reviewProductSelect = document.getElementById("reviewProductId");
+  const reviewProductInput = document.getElementById("reviewProductId");
+  const reviewProductOptions = document.getElementById("reviewProductOptions");
   const reviewForm = document.getElementById("reviewForm");
   const reviewFeedback = document.getElementById("reviewFeedback");
 
@@ -24,9 +25,9 @@
 
   document.addEventListener("products:loaded", (event) => {
     products = event.detail || [];
-    if (reviewProductSelect) {
-      reviewProductSelect.innerHTML = products
-        .map((p) => `<option value="${p.id}">${p.name}</option>`)
+    if (reviewProductOptions) {
+      reviewProductOptions.innerHTML = products
+        .map((p) => `<option value="${p.name}"></option>`)
         .join("");
     }
   });
@@ -141,10 +142,20 @@
     reviewForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       reviewFeedback.hidden = true;
+
+      const typedName = reviewProductInput.value.trim().toLowerCase();
+      const matchedProduct = products.find((p) => p.name.toLowerCase() === typedName);
+      if (!matchedProduct) {
+        reviewFeedback.textContent = "Please select a valid product from the list.";
+        reviewFeedback.className = "promo-feedback error";
+        reviewFeedback.hidden = false;
+        return;
+      }
+
       const submitButton = reviewForm.querySelector("button[type='submit']");
       submitButton.disabled = true;
 
-      const productId = reviewProductSelect.value;
+      const productId = matchedProduct.id;
       const payload = {
         customer_name: document.getElementById("reviewName").value.trim(),
         customer_email: document.getElementById("reviewEmail").value.trim(),
