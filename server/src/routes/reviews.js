@@ -27,6 +27,11 @@ router.post("/products/:id/reviews", async (req, res) => {
     return res.status(400).json({ error: "Rating must be between 1 and 5" });
   }
 
+  const { rows: productRows } = await pool.query("SELECT 1 FROM products WHERE id = $1", [productId]);
+  if (!productRows.length) {
+    return res.status(404).json({ error: "Product not found" });
+  }
+
   const { rows } = await pool.query(
     `INSERT INTO reviews (product_id, customer_name, customer_email, rating, review_text)
      VALUES ($1, $2, $3, $4, $5) RETURNING *`,

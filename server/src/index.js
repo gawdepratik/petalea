@@ -1,6 +1,7 @@
 require("dotenv").config();
 
 const express = require("express");
+require("express-async-errors");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
@@ -43,6 +44,8 @@ app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ error: "Internal server error" });
 });
+
+process.on("unhandledRejection", (err) => console.error("Unhandled rejection:", err));
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => console.log(`PETALEA server listening on port ${port}`));
