@@ -569,6 +569,23 @@ p { color: var(--brown); }
 }
 .instagram-float:hover { transform: translateY(-3px); }
 
+.cookie-banner {
+  position: fixed; left: 24px; bottom: 24px; z-index: 95; width: min(360px, calc(100% - 48px));
+  background: var(--espresso); color: #eee5d9; padding: 20px 22px; border-radius: 6px;
+  box-shadow: var(--shadow-lg);
+}
+.cookie-banner[hidden] { display: none; }
+.cookie-banner p { font-size: 13px; line-height: 1.5; margin-bottom: 14px; }
+.cookie-banner p a { color: var(--gold); }
+.cookie-banner-actions { display: flex; gap: 10px; }
+.cookie-banner-actions button {
+  font-family: var(--sans); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+  padding: 9px 16px; border-radius: 3px; cursor: pointer; border: 1px solid transparent;
+}
+.cookie-banner-actions #cookieAccept { background: var(--gold); color: var(--espresso); border-color: var(--gold); }
+.cookie-banner-actions #cookieDecline { background: none; color: #eee5d9; border-color: rgba(255,255,255,.3); }
+.cookie-banner-actions #cookieDecline:hover { border-color: #eee5d9; }
+
 .toast {
   position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px);
   background: var(--espresso); color: var(--white); padding: 14px 24px; font-size: 12.5px;

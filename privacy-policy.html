@@ -65,7 +65,7 @@
         <p>We do not sell or rent your personal information to anyone. We don't share it with third parties except where necessary to run the business — for example, our email and hosting providers, who only process data on our behalf and don't use it for their own purposes.</p>
 
         <h3>Cookies</h3>
-        <p>The storefront itself doesn't use tracking or advertising cookies. Our admin panel uses a single secure login cookie so our team can manage orders and products — this isn't set for regular visitors.</p>
+        <p>With your consent, we use Google Analytics to understand site traffic — how many people visit, which pages they view, and roughly where they came from. This sets anonymous cookies in your browser. You'll see a banner on your first visit asking to accept or decline this; declining means no analytics cookies are set. Our admin panel separately uses a single secure login cookie so our team can manage orders and products — this isn't set for regular visitors.</p>
 
         <h3>How long we keep your data</h3>
         <p>We keep order records for as long as needed for accounting and customer service purposes. If you'd like your personal data deleted or corrected, contact us using the details below and we'll action it, subject to any records we're legally required to retain.</p>
@@ -143,8 +143,17 @@
     </svg>
   </a>
 
+  <div class="cookie-banner" id="cookieBanner" hidden>
+    <p>We use cookies to understand site traffic. See our <a href="privacy-policy.html">Privacy Policy</a>.</p>
+    <div class="cookie-banner-actions">
+      <button type="button" id="cookieDecline">Decline</button>
+      <button type="button" id="cookieAccept">Accept</button>
+    </div>
+  </div>
+
   <div class="toast" id="toast">Added to your cart.</div>
   <script src="js/config.js"></script>
+  <script src="js/analytics.js"></script>
   <script src="js/script.js"></script>
 </body>
 </html>
