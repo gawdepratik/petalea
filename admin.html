@@ -54,6 +54,7 @@
             <button class="admin-tab" id="tabOrders" type="button">Orders &amp; Sales</button>
             <button class="admin-tab" id="tabPromo" type="button">Promo Codes</button>
             <button class="admin-tab" id="tabReviews" type="button">Reviews</button>
+            <button class="admin-tab" id="tabAnalytics" type="button">Analytics</button>
           </div>
           <button class="button button-outline" id="logoutButton" type="button">Log out</button>
         </div>
@@ -180,6 +181,36 @@
               </tr>
             </thead>
             <tbody id="reviewsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="analyticsPanel" hidden>
+        <p class="admin-hint" id="analyticsRange">Last 7 days</p>
+        <div class="admin-summary-cards">
+          <div class="admin-summary-card">
+            <p class="admin-hint">Visitors</p>
+            <strong id="analyticsUsers">—</strong>
+          </div>
+          <div class="admin-summary-card">
+            <p class="admin-hint">Sessions</p>
+            <strong id="analyticsSessions">—</strong>
+          </div>
+          <div class="admin-summary-card">
+            <p class="admin-hint">Page views</p>
+            <strong id="analyticsPageViews">—</strong>
+          </div>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Page</th>
+                <th>Views (7 days)</th>
+              </tr>
+            </thead>
+            <tbody id="analyticsTopPagesBody"></tbody>
           </table>
         </div>
       </div>

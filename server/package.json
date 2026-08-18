@@ -9,6 +9,7 @@
     "seed": "node src/seed.js"
   },
   "dependencies": {
+    "@google-analytics/data": "^7.0.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",

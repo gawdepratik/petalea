@@ -51,10 +51,12 @@ const tabProducts = document.getElementById("tabProducts");
 const tabOrders = document.getElementById("tabOrders");
 const tabPromo = document.getElementById("tabPromo");
 const tabReviews = document.getElementById("tabReviews");
+const tabAnalytics = document.getElementById("tabAnalytics");
 const productsPanel = document.getElementById("productsPanel");
 const ordersPanel = document.getElementById("ordersPanel");
 const promoPanel = document.getElementById("promoPanel");
 const reviewsPanel = document.getElementById("reviewsPanel");
+const analyticsPanel = document.getElementById("analyticsPanel");
 const reportFilterForm = document.getElementById("reportFilterForm");
 const filterFrom = document.getElementById("filterFrom");
 const filterTo = document.getElementById("filterTo");
@@ -309,22 +311,26 @@ function switchTab(tab) {
   tabOrders.classList.toggle("active", tab === "orders");
   tabPromo.classList.toggle("active", tab === "promo");
   tabReviews.classList.toggle("active", tab === "reviews");
+  tabAnalytics.classList.toggle("active", tab === "analytics");
   productsPanel.hidden = tab !== "products";
   ordersPanel.hidden = tab !== "orders";
   promoPanel.hidden = tab !== "promo";
   reviewsPanel.hidden = tab !== "reviews";
+  analyticsPanel.hidden = tab !== "analytics";
   dashboardTitle.textContent =
-    tab === "orders" ? "Orders & Sales" : tab === "promo" ? "Promo Codes" : tab === "reviews" ? "Reviews" : "Products";
+    tab === "orders" ? "Orders & Sales" : tab === "promo" ? "Promo Codes" : tab === "reviews" ? "Reviews" : tab === "analytics" ? "Analytics" : "Products";
 
   if (tab === "orders") loadOrders();
   if (tab === "promo") loadPromoCodes();
   if (tab === "reviews") loadReviews();
+  if (tab === "analytics") loadAnalytics();
 }
 
 tabProducts.addEventListener("click", () => switchTab("products"));
 tabOrders.addEventListener("click", () => switchTab("orders"));
 tabPromo.addEventListener("click", () => switchTab("promo"));
 tabReviews.addEventListener("click", () => switchTab("reviews"));
+tabAnalytics.addEventListener("click", () => switchTab("analytics"));
 
 async function loadOrders() {
   const query = currentFilterQuery();
@@ -785,5 +791,35 @@ reviewsTableBody.addEventListener("click", async (event) => {
   showToast("Review updated.");
   loadReviews();
 });
+
+/* ---------------------------- Analytics ---------------------------- */
+const analyticsUsers = document.getElementById("analyticsUsers");
+const analyticsSessions = document.getElementById("analyticsSessions");
+const analyticsPageViews = document.getElementById("analyticsPageViews");
+const analyticsTopPagesBody = document.getElementById("analyticsTopPagesBody");
+
+async function loadAnalytics() {
+  analyticsUsers.textContent = "—";
+  analyticsSessions.textContent = "—";
+  analyticsPageViews.textContent = "—";
+  analyticsTopPagesBody.innerHTML = `<tr><td colspan="2">Loading…</td></tr>`;
+
+  const response = await api("/api/admin/analytics/summary");
+  if (!response.ok) {
+    showError(adminError, "Could not load analytics right now. Check the server's Google Analytics setup.");
+    analyticsTopPagesBody.innerHTML = `<tr><td colspan="2">Could not load analytics.</td></tr>`;
+    return;
+  }
+  hideError(adminError);
+
+  const data = await response.json();
+  analyticsUsers.textContent = data.activeUsers7d;
+  analyticsSessions.textContent = data.sessions7d;
+  analyticsPageViews.textContent = data.pageViews7d;
+
+  analyticsTopPagesBody.innerHTML = data.topPages.length
+    ? data.topPages.map((p) => `<tr><td>${p.title}</td><td>${p.views}</td></tr>`).join("")
+    : `<tr><td colspan="2">No traffic recorded yet.</td></tr>`;
+}
 
 checkSession();
