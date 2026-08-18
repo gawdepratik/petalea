@@ -469,7 +469,14 @@ p { color: var(--brown); }
 .footer-grid a { display: block; margin: 9px 0; font-size: 13px; transition: color .25s var(--ease); }
 .footer-grid a:hover { color: var(--gold); }
 .footer-title { color: #f3e9db !important; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 16px; }
-.footer-bottom { border-top: 1px solid rgba(255,255,255,.10); padding-top: 22px; display: flex; justify-content: space-between; font-size: 11px; color: #7c705f; }
+.footer-bottom { border-top: 1px solid rgba(255,255,255,.10); padding-top: 22px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #7c705f; gap: 16px; flex-wrap: wrap; }
+.footer-legal { display: flex; gap: 20px; }
+.footer-legal a { color: #a2937f; font-size: 11px; transition: color .25s var(--ease); }
+.footer-legal a:hover { color: var(--gold); }
+
+.legal-content h3 { font-size: 20px; margin: 36px 0 10px; }
+.legal-content h3:first-of-type { margin-top: 24px; }
+.legal-content p { font-size: 14.5px; line-height: 1.7; color: var(--brown); }
 
 /* -------------------------------- Cart -------------------------------------- */
 .cart-panel { position: fixed; inset: 0; z-index: 50; visibility: hidden; }
