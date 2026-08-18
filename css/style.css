@@ -550,6 +550,15 @@ p { color: var(--brown); }
 .whatsapp-float:hover { transform: translateY(-3px); }
 .whatsapp-float[hidden] { display: none; }
 
+.instagram-float {
+  position: fixed; right: 24px; bottom: 92px; z-index: 90;
+  width: 56px; height: 56px; border-radius: 50%; color: #fff;
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+  display: grid; place-items: center; box-shadow: var(--shadow);
+  transition: transform .25s var(--ease);
+}
+.instagram-float:hover { transform: translateY(-3px); }
+
 .toast {
   position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px);
   background: var(--espresso); color: var(--white); padding: 14px 24px; font-size: 12.5px;
