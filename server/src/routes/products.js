@@ -5,11 +5,18 @@ const { sendMail } = require("../email");
 
 const router = express.Router();
 
-const PUBLIC_COLUMNS = "id, name, description, price, discount_percent, image_url, featured, category, stock_quantity";
-
 router.get("/products", async (req, res) => {
   const { rows } = await pool.query(
-    `SELECT ${PUBLIC_COLUMNS} FROM products WHERE active = true ORDER BY id ASC`
+    `SELECT p.id, p.name, p.description, p.price, p.discount_percent, p.image_url, p.featured, p.category, p.stock_quantity,
+            COALESCE(r.avg_rating, 0)::float AS avg_rating, COALESCE(r.review_count, 0)::int AS review_count
+     FROM products p
+     LEFT JOIN (
+       SELECT product_id, AVG(rating) AS avg_rating, COUNT(*) AS review_count
+       FROM reviews WHERE status = 'approved'
+       GROUP BY product_id
+     ) r ON r.product_id = p.id
+     WHERE p.active = true
+     ORDER BY p.id ASC`
   );
   res.json(rows);
 });

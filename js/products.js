@@ -7,6 +7,20 @@
     }).format(value);
   }
 
+  function starString(rating) {
+    return "★".repeat(rating) + "☆".repeat(5 - rating);
+  }
+
+  function ratingMarkup(product) {
+    if (!product.review_count) return "";
+    return `
+      <div class="card-rating">
+        <span class="review-stars">${starString(Math.round(product.avg_rating))}</span>
+        <span class="card-rating-count">(${product.review_count})</span>
+      </div>
+    `;
+  }
+
   function productImageMarkup(product) {
     if (product.image_url && product.image_url.startsWith("ph-")) {
       return `<div class="product-placeholder ${product.image_url}"><span>PETALÉA</span></div>`;
@@ -37,6 +51,7 @@
         <div class="product-detail-trigger">${productImageMarkup(product)}</div>
         <div class="product-info">
           <h3 class="product-detail-trigger">${product.name}</h3>
+          ${ratingMarkup(product)}
           <p>${product.description}</p>
           <div class="product-bottom">
             <span class="product-price">${priceMarkup}</span>
@@ -51,6 +66,51 @@
     grid.innerHTML = products.length
       ? products.map(productCardMarkup).join("")
       : '<p class="empty-cart">More creations are on their way — check back soon.</p>';
+  }
+
+  function injectStructuredData(list) {
+    if (!list.length) return;
+    let script = document.getElementById("productsJsonLd");
+    if (!script) {
+      script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.id = "productsJsonLd";
+      document.head.appendChild(script);
+    }
+
+    const itemListElement = list.map((p, i) => {
+      const finalPrice = p.discount_percent > 0
+        ? Math.round(p.price * (1 - p.discount_percent / 100))
+        : p.price;
+
+      return {
+        "@type": "ListItem",
+        position: i + 1,
+        item: {
+          "@type": "Product",
+          name: p.name,
+          description: p.description,
+          image: p.image_url && !p.image_url.startsWith("ph-") ? p.image_url : undefined,
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "INR",
+            price: finalPrice,
+            availability: p.stock_quantity === null || p.stock_quantity > 0
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock"
+          },
+          aggregateRating: p.review_count > 0
+            ? { "@type": "AggregateRating", ratingValue: p.avg_rating.toFixed(1), reviewCount: p.review_count }
+            : undefined
+        }
+      };
+    });
+
+    script.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      itemListElement
+    });
   }
 
   function setupCollectionControls(filterBar, allGrid, products) {
@@ -123,12 +183,14 @@
       if (featuredGrid) {
         const featured = products.filter((p) => p.featured);
         renderGrid(featuredGrid, featured);
+        injectStructuredData(featured);
       }
 
       if (allGrid) {
         const rest = products.filter((p) => !p.featured);
         renderGrid(allGrid, rest);
         if (categoryFilters) setupCollectionControls(categoryFilters, allGrid, rest);
+        injectStructuredData(rest);
       }
 
       document.dispatchEvent(new CustomEvent("products:loaded", { detail: products }));

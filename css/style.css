@@ -289,6 +289,9 @@ p { color: var(--brown); }
 .product-info { padding: 22px 3px; }
 .product-info h3 { font-size: 29px; }
 .product-info p { font-size: 13px; margin: 6px 0 20px; }
+.card-rating { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.card-rating .review-stars { margin-bottom: 0; font-size: 13px; }
+.card-rating-count { font-size: 12px; color: var(--brown-light); }
 .product-bottom { display: flex; align-items: center; justify-content: space-between; }
 .product-bottom strong { font-size: 15px; font-family: var(--serif); font-size: 20px; }
 .price-original { text-decoration: line-through; color: var(--brown-light); font-size: 13px; margin-left: 6px; }
