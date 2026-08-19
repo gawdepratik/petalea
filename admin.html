@@ -54,6 +54,7 @@
             <button class="admin-tab" id="tabOrders" type="button">Orders &amp; Sales</button>
             <button class="admin-tab" id="tabPromo" type="button">Promo Codes</button>
             <button class="admin-tab" id="tabReviews" type="button">Reviews</button>
+            <button class="admin-tab" id="tabCustomOrders" type="button">Custom Orders</button>
             <button class="admin-tab" id="tabAnalytics" type="button">Analytics</button>
           </div>
           <button class="button button-outline" id="logoutButton" type="button">Log out</button>
@@ -185,6 +186,26 @@
         </div>
       </div>
 
+      <div id="customOrdersPanel" hidden>
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Occasion</th>
+                <th>Budget</th>
+                <th>Delivery date</th>
+                <th>Preferences</th>
+                <th>Notes</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="customOrdersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div id="analyticsPanel" hidden>
         <p class="admin-hint" id="analyticsRange">Last 7 days</p>
         <div class="admin-summary-cards">
@@ -232,8 +253,12 @@
         <label>Price (₹)<input type="number" id="productPrice" min="0" required></label>
         <label>Discount %<input type="number" id="productDiscount" min="0" max="100" value="0"></label>
         <label>Stock quantity (leave blank for unlimited/untracked)<input type="number" id="productStock" min="0" placeholder="e.g. 10"></label>
+        <label>Dimensions (optional)<input type="text" id="productDimensions" placeholder="e.g. 6 x 4 x 3 inches"></label>
         <label>Image URL (or ph-1..ph-6 for a placeholder)<input type="text" id="productImage" placeholder="images/example.jpg"></label>
         <div class="admin-image-preview" id="productImagePreview" hidden></div>
+        <label>Additional images (optional)</label>
+        <div class="admin-order-items" id="productAdditionalImages"></div>
+        <button type="button" class="text-link" id="addProductImageButton">+ Add image</button>
         <label class="admin-checkbox"><input type="checkbox" id="productFeatured"> Featured on homepage</label>
         <label class="admin-checkbox"><input type="checkbox" id="productActive" checked> Active (visible on site)</label>
         <div class="admin-modal-actions">

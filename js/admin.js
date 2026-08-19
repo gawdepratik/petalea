@@ -51,11 +51,13 @@ const tabProducts = document.getElementById("tabProducts");
 const tabOrders = document.getElementById("tabOrders");
 const tabPromo = document.getElementById("tabPromo");
 const tabReviews = document.getElementById("tabReviews");
+const tabCustomOrders = document.getElementById("tabCustomOrders");
 const tabAnalytics = document.getElementById("tabAnalytics");
 const productsPanel = document.getElementById("productsPanel");
 const ordersPanel = document.getElementById("ordersPanel");
 const promoPanel = document.getElementById("promoPanel");
 const reviewsPanel = document.getElementById("reviewsPanel");
+const customOrdersPanel = document.getElementById("customOrdersPanel");
 const analyticsPanel = document.getElementById("analyticsPanel");
 const reportFilterForm = document.getElementById("reportFilterForm");
 const filterFrom = document.getElementById("filterFrom");
@@ -199,6 +201,22 @@ function renderProducts(products) {
 
 productSearch.addEventListener("input", () => renderProducts(allProducts));
 
+const productAdditionalImages = document.getElementById("productAdditionalImages");
+const addProductImageButton = document.getElementById("addProductImageButton");
+
+function addProductImageRow(value = "") {
+  const row = document.createElement("div");
+  row.className = "manual-order-item";
+  row.innerHTML = `
+    <input type="text" class="product-additional-image-input" placeholder="images/example-2.jpg" value="${value}">
+    <button type="button" aria-label="Remove image">×</button>
+  `;
+  row.querySelector("button").addEventListener("click", () => row.remove());
+  productAdditionalImages.appendChild(row);
+}
+
+addProductImageButton.addEventListener("click", () => addProductImageRow());
+
 function openProductModal(product) {
   productForm.reset();
   document.getElementById("productId").value = product ? product.id : "";
@@ -208,10 +226,15 @@ function openProductModal(product) {
   document.getElementById("productPrice").value = product ? product.price : "";
   document.getElementById("productDiscount").value = product ? product.discount_percent : 0;
   productStock.value = product && product.stock_quantity !== null ? product.stock_quantity : "";
+  document.getElementById("productDimensions").value = product ? product.dimensions || "" : "";
   productImage.value = product ? product.image_url : "";
   document.getElementById("productFeatured").checked = product ? product.featured : false;
   document.getElementById("productActive").checked = product ? product.active : true;
   productModalTitle.textContent = product ? "Edit product" : "Add product";
+
+  productAdditionalImages.innerHTML = "";
+  (product && product.additional_images ? product.additional_images : []).forEach((url) => addProductImageRow(url));
+
   productModal.hidden = false;
   updateImagePreview();
 }
@@ -265,7 +288,11 @@ productForm.addEventListener("submit", async (event) => {
     price: Number(document.getElementById("productPrice").value),
     discount_percent: Number(document.getElementById("productDiscount").value) || 0,
     stock_quantity: productStock.value.trim() === "" ? null : Number(productStock.value),
+    dimensions: document.getElementById("productDimensions").value.trim(),
     image_url: productImage.value.trim(),
+    additional_images: [...productAdditionalImages.querySelectorAll(".product-additional-image-input")]
+      .map((input) => input.value.trim())
+      .filter(Boolean),
     featured: document.getElementById("productFeatured").checked,
     active: document.getElementById("productActive").checked
   };
@@ -311,18 +338,21 @@ function switchTab(tab) {
   tabOrders.classList.toggle("active", tab === "orders");
   tabPromo.classList.toggle("active", tab === "promo");
   tabReviews.classList.toggle("active", tab === "reviews");
+  tabCustomOrders.classList.toggle("active", tab === "customOrders");
   tabAnalytics.classList.toggle("active", tab === "analytics");
   productsPanel.hidden = tab !== "products";
   ordersPanel.hidden = tab !== "orders";
   promoPanel.hidden = tab !== "promo";
   reviewsPanel.hidden = tab !== "reviews";
+  customOrdersPanel.hidden = tab !== "customOrders";
   analyticsPanel.hidden = tab !== "analytics";
   dashboardTitle.textContent =
-    tab === "orders" ? "Orders & Sales" : tab === "promo" ? "Promo Codes" : tab === "reviews" ? "Reviews" : tab === "analytics" ? "Analytics" : "Products";
+    tab === "orders" ? "Orders & Sales" : tab === "promo" ? "Promo Codes" : tab === "reviews" ? "Reviews" : tab === "customOrders" ? "Custom Orders" : tab === "analytics" ? "Analytics" : "Products";
 
   if (tab === "orders") loadOrders();
   if (tab === "promo") loadPromoCodes();
   if (tab === "reviews") loadReviews();
+  if (tab === "customOrders") loadCustomOrders();
   if (tab === "analytics") loadAnalytics();
 }
 
@@ -330,6 +360,7 @@ tabProducts.addEventListener("click", () => switchTab("products"));
 tabOrders.addEventListener("click", () => switchTab("orders"));
 tabPromo.addEventListener("click", () => switchTab("promo"));
 tabReviews.addEventListener("click", () => switchTab("reviews"));
+tabCustomOrders.addEventListener("click", () => switchTab("customOrders"));
 tabAnalytics.addEventListener("click", () => switchTab("analytics"));
 
 async function loadOrders() {
@@ -790,6 +821,60 @@ reviewsTableBody.addEventListener("click", async (event) => {
   hideError(adminError);
   showToast("Review updated.");
   loadReviews();
+});
+
+/* ---------------------------- Custom Orders ---------------------------- */
+const customOrdersTableBody = document.getElementById("customOrdersTableBody");
+const CUSTOM_ORDER_STATUSES = ["new", "contacted", "completed"];
+
+async function loadCustomOrders() {
+  const response = await api("/api/admin/custom-orders");
+  if (!response.ok) {
+    showError(adminError, "Could not load custom order requests.");
+    return;
+  }
+  hideError(adminError);
+  const requests = await response.json();
+
+  customOrdersTableBody.innerHTML = requests.length
+    ? requests
+        .map(
+          (r) => `
+            <tr data-id="${r.id}">
+              <td>${new Date(r.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
+              <td class="wrap-cell">${r.customer_name}<br><span class="admin-hint">${r.customer_email}<br>${r.customer_phone}</span></td>
+              <td>${r.occasion || "—"}</td>
+              <td>${r.budget_range || "—"}</td>
+              <td>${r.delivery_date ? new Date(r.delivery_date).toLocaleDateString("en-IN") : "—"}</td>
+              <td class="wrap-cell">${r.flower_preferences || "—"}</td>
+              <td class="wrap-cell">${r.notes || "—"}</td>
+              <td>
+                <select class="order-status-select custom-order-status-select" data-id="${r.id}">
+                  ${CUSTOM_ORDER_STATUSES.map((s) => `<option value="${s}" ${r.status === s ? "selected" : ""}>${s}</option>`).join("")}
+                </select>
+              </td>
+            </tr>
+          `
+        )
+        .join("")
+    : `<tr><td colspan="8">No custom order requests yet.</td></tr>`;
+}
+
+customOrdersTableBody.addEventListener("change", async (event) => {
+  const select = event.target.closest(".custom-order-status-select");
+  if (!select) return;
+
+  const response = await api(`/api/admin/custom-orders/${select.dataset.id}/status`, {
+    method: "PUT",
+    body: JSON.stringify({ status: select.value })
+  });
+
+  if (!response.ok) {
+    showError(adminError, "Could not update that request.");
+    return;
+  }
+  hideError(adminError);
+  showToast("Custom order request updated.");
 });
 
 /* ---------------------------- Analytics ---------------------------- */

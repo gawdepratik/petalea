@@ -35,7 +35,7 @@
         <a href="#home">Home</a>
         <a href="#collection">Collection</a>
         <a href="#story">Our Story</a>
-        <a href="#custom">Custom Orders</a>
+        <a href="custom-order.html">Custom Orders</a>
         <a href="order-lookup.html">Track Order</a>
         <a href="reviews.html">Reviews</a>
         <a href="#contact">Contact</a>
@@ -97,7 +97,7 @@
           <h2>From simple twists to meaningful keepsakes.</h2>
           <p>What started as a love for making beautiful things by hand became PETALÉA — a little space for flowers that never fade.</p>
           <p>Each piece is shaped by hand, with tiny details that make every creation feel personal. Whether it's a gift for someone you love or a bloom for your own space, we believe handmade should feel special.</p>
-          <a class="button button-outline" href="#custom">Create something custom</a>
+          <a class="button button-outline" href="custom-order.html">Create something custom</a>
         </div>
       </div>
     </section>
@@ -122,7 +122,7 @@
           <h2>Have something special in mind?</h2>
           <p>Tell us your colors, flowers, occasion and little details. We'll create something uniquely yours.</p>
         </div>
-        <a class="button button-light" href="mailto:orders@petalea.in?subject=PETALÉA%20Custom%20Order">Start a custom order</a>
+        <a class="button button-light" href="custom-order.html">Start a custom order</a>
       </div>
     </section>
 
@@ -133,7 +133,7 @@
           <span class="social-handle">@petalea</span>
         </div>
         <div class="gallery-grid reveal">
-          <div class="gallery-item g1"><img src="images/story-crafted-basket.png" alt="Handcrafted flower basket with lavender and roses"><span>PETALÉA</span></div>
+          <div class="gallery-item g1"><img src="images/gallery-petalea.png" alt="PETALÉA studio workspace"><span>PETALÉA</span></div>
           <div class="gallery-item g2"><img src="images/Blush Bloom Bouquet.png" alt="Blush Bloom Bouquet"><span>HANDMADE</span></div>
           <div class="gallery-item g3"><img src="images/Lavender Meadow.png" alt="Lavender Meadow arrangement"><span>FOREVER</span></div>
           <div class="gallery-item g4"><img src="images/Pastel Daydream.jpg" alt="Pastel Daydream arrangement"><span>WITH LOVE</span></div>
@@ -162,7 +162,7 @@
   <footer class="footer">
     <div class="container footer-grid">
       <div><a class="brand footer-brand" href="#home">PETALÉA</a><p>Handcrafted flowers that last.</p></div>
-      <div><p class="footer-title">Explore</p><a href="#collection">Collection</a><a href="#story">Our Story</a><a href="#custom">Custom Orders</a><a href="order-lookup.html">Track Order</a><a href="reviews.html">Reviews</a></div>
+      <div><p class="footer-title">Explore</p><a href="#collection">Collection</a><a href="#story">Our Story</a><a href="custom-order.html">Custom Orders</a><a href="order-lookup.html">Track Order</a><a href="reviews.html">Reviews</a></div>
       <div><p class="footer-title">Connect</p><a href="#contact">Contact</a><a href="https://instagram.com/petalea" target="_blank" rel="noopener">Instagram</a><a href="mailto:orders@petalea.in">Email</a></div>
     </div>
     <div class="container footer-bottom">
@@ -218,11 +218,15 @@
     <div class="product-modal-overlay" id="productDetailOverlay"></div>
     <div class="product-modal-panel">
       <button class="product-modal-close" id="closeProductDetail" aria-label="Close">×</button>
-      <div class="product-modal-image" id="detailImage"></div>
+      <div class="product-modal-image">
+        <div id="detailImage"></div>
+        <div class="product-modal-thumbs" id="detailThumbs" hidden></div>
+      </div>
       <div class="product-modal-info">
         <p class="eyebrow" id="detailCategory"></p>
         <h3 id="detailName"></h3>
         <p id="detailDescription"></p>
+        <p class="product-detail-dimensions" id="detailDimensions" hidden></p>
         <div class="product-bottom">
           <span class="product-price" id="detailPrice"></span>
           <div id="detailAction"></div>

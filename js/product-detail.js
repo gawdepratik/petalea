@@ -6,9 +6,11 @@
   const overlay = document.getElementById("productDetailOverlay");
   const closeButton = document.getElementById("closeProductDetail");
   const detailImage = document.getElementById("detailImage");
+  const detailThumbs = document.getElementById("detailThumbs");
   const detailCategory = document.getElementById("detailCategory");
   const detailName = document.getElementById("detailName");
   const detailDescription = document.getElementById("detailDescription");
+  const detailDimensions = document.getElementById("detailDimensions");
   const detailPrice = document.getElementById("detailPrice");
   const detailAction = document.getElementById("detailAction");
   const reviewsList = document.getElementById("detailReviewsList");
@@ -68,16 +70,48 @@
     }
   }
 
+  function imageMarkup(url, alt) {
+    return url && url.startsWith("ph-")
+      ? `<div class="product-placeholder ${url}"><span>PETALÉA</span></div>`
+      : `<img src="${url}" alt="${alt}">`;
+  }
+
+  function showMainImage(url, alt) {
+    detailImage.innerHTML = imageMarkup(url, alt);
+  }
+
   function openModal(productId) {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
-    detailImage.innerHTML = product.image_url && product.image_url.startsWith("ph-")
-      ? `<div class="product-placeholder ${product.image_url}"><span>PETALÉA</span></div>`
-      : `<img src="${product.image_url}" alt="${product.name}">`;
+    const gallery = [product.image_url, ...(product.additional_images || [])].filter(Boolean);
+    showMainImage(product.image_url, product.name);
+
+    if (gallery.length > 1) {
+      detailThumbs.innerHTML = gallery
+        .map((url, i) => {
+          const thumb = url.startsWith("ph-")
+            ? `<div class="product-placeholder ${url}"></div>`
+            : `<img src="${url}" alt="${product.name} view ${i + 1}">`;
+          return `<button type="button" class="product-thumb${i === 0 ? " active" : ""}" data-url="${url}">${thumb}</button>`;
+        })
+        .join("");
+      detailThumbs.hidden = false;
+    } else {
+      detailThumbs.innerHTML = "";
+      detailThumbs.hidden = true;
+    }
+
     detailCategory.textContent = product.category || "";
     detailName.textContent = product.name;
     detailDescription.textContent = product.description;
+
+    if (product.dimensions) {
+      detailDimensions.textContent = `Dimensions: ${product.dimensions}`;
+      detailDimensions.hidden = false;
+    } else {
+      detailDimensions.hidden = true;
+    }
 
     const hasDiscount = product.discount_percent > 0;
     const finalPrice = hasDiscount
@@ -116,6 +150,14 @@
     closeButton.addEventListener("click", closeModal);
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && !modal.hidden) closeModal();
+    });
+
+    detailThumbs.addEventListener("click", (event) => {
+      const thumb = event.target.closest(".product-thumb");
+      if (!thumb) return;
+      detailThumbs.querySelectorAll(".product-thumb").forEach((t) => t.classList.remove("active"));
+      thumb.classList.add("active");
+      showMainImage(thumb.dataset.url, detailName.textContent);
     });
   }
 

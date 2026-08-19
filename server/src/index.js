@@ -11,6 +11,7 @@ const orderRoutes = require("./routes/orders");
 const promoCodeRoutes = require("./routes/promoCodes");
 const reviewRoutes = require("./routes/reviews");
 const analyticsRoutes = require("./routes/analytics");
+const customOrderRoutes = require("./routes/customOrders");
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use("/api", orderRoutes);
 app.use("/api", promoCodeRoutes);
 app.use("/api", reviewRoutes);
 app.use("/api", analyticsRoutes);
+app.use("/api", customOrderRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

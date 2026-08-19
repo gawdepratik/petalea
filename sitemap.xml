@@ -16,6 +16,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://petalea.in/custom-order.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://petalea.in/order-lookup.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>

@@ -8,6 +8,7 @@ const router = express.Router();
 router.get("/products", async (req, res) => {
   const { rows } = await pool.query(
     `SELECT p.id, p.name, p.description, p.price, p.discount_percent, p.image_url, p.featured, p.category, p.stock_quantity,
+            p.dimensions, p.additional_images,
             COALESCE(r.avg_rating, 0)::float AS avg_rating, COALESCE(r.review_count, 0)::int AS review_count
      FROM products p
      LEFT JOIN (
@@ -27,23 +28,29 @@ router.get("/admin/products", requireAdmin, async (req, res) => {
 });
 
 router.post("/admin/products", requireAdmin, async (req, res) => {
-  const { name, description = "", price, discount_percent = 0, image_url = "", featured = false, active = true, category = "", stock_quantity = null } = req.body;
+  const {
+    name, description = "", price, discount_percent = 0, image_url = "", featured = false,
+    active = true, category = "", stock_quantity = null, dimensions = "", additional_images = []
+  } = req.body;
 
   if (!name || !Number.isFinite(Number(price))) {
     return res.status(400).json({ error: "name and price are required" });
   }
 
   const { rows } = await pool.query(
-    `INSERT INTO products (name, description, price, discount_percent, image_url, featured, active, category, stock_quantity)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-    [name, description, price, discount_percent, image_url, featured, active, category, stock_quantity]
+    `INSERT INTO products (name, description, price, discount_percent, image_url, featured, active, category, stock_quantity, dimensions, additional_images)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+    [name, description, price, discount_percent, image_url, featured, active, category, stock_quantity, dimensions, additional_images]
   );
   res.status(201).json(rows[0]);
 });
 
 router.put("/admin/products/:id", requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, discount_percent, image_url, featured, active, category, stock_quantity } = req.body;
+  const {
+    name, description, price, discount_percent, image_url, featured, active, category,
+    stock_quantity, dimensions, additional_images
+  } = req.body;
 
   const { rows: beforeRows } = await pool.query("SELECT stock_quantity FROM products WHERE id = $1", [id]);
   const wasOutOfStock = beforeRows[0] && beforeRows[0].stock_quantity !== null && beforeRows[0].stock_quantity <= 0;
@@ -59,9 +66,11 @@ router.put("/admin/products/:id", requireAdmin, async (req, res) => {
        active = COALESCE($7, active),
        category = COALESCE($8, category),
        stock_quantity = $9,
+       dimensions = COALESCE($10, dimensions),
+       additional_images = COALESCE($11, additional_images),
        updated_at = now()
-     WHERE id = $10 RETURNING *`,
-    [name, description, price, discount_percent, image_url, featured, active, category, stock_quantity, id]
+     WHERE id = $12 RETURNING *`,
+    [name, description, price, discount_percent, image_url, featured, active, category, stock_quantity, dimensions, additional_images, id]
   );
 
   if (!rows[0]) {
