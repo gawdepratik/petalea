@@ -4,7 +4,7 @@
   if (!form) return;
 
   const deliveryDateInput = document.getElementById("customDeliveryDate");
-  if (deliveryDateInput) deliveryDateInput.min = new Date().toISOString().slice(0, 10);
+  if (deliveryDateInput) deliveryDateInput.min = earliestDeliveryDate();
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -46,7 +46,7 @@
           whatsappLink.hidden = false;
         }
         form.reset();
-        if (deliveryDateInput) deliveryDateInput.min = new Date().toISOString().slice(0, 10);
+        if (deliveryDateInput) deliveryDateInput.min = earliestDeliveryDate();
         if (typeof showToast === "function") showToast("Custom order request sent!");
       }
       feedback.hidden = false;

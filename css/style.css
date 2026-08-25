@@ -597,6 +597,7 @@ p { color: var(--brown); }
   background: var(--ivory); resize: vertical;
 }
 .checkout-form input:focus, .checkout-form textarea:focus { outline: none; border-color: var(--terracotta); }
+.field-hint { display: block; text-transform: none; letter-spacing: normal; font-weight: 400; font-size: 11.5px; color: var(--brown-light); margin-top: 4px; }
 .checkout-form .back-link { align-self: flex-start; }
 .promo-row { display: flex; gap: 10px; }
 .promo-row input {

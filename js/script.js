@@ -44,7 +44,7 @@
 (function initDeliveryDateMin() {
   const input = document.getElementById("checkoutDeliveryDate");
   if (!input) return;
-  input.min = new Date().toISOString().slice(0, 10);
+  input.min = earliestDeliveryDate();
 })();
 
 const cart = [];
