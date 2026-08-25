@@ -340,6 +340,7 @@ p { color: var(--brown); }
 .product-thumb:hover { opacity: .85; }
 .product-thumb.active { opacity: 1; border-color: var(--terracotta); }
 .product-detail-dimensions { font-size: 13px; color: var(--brown); margin: -2px 0 6px; }
+.product-modal-info { padding: 40px; display: grid; gap: 4px; align-content: start; }
 .product-modal-info h3 { font-size: 32px; margin-bottom: 10px; }
 .product-modal-info > p { margin-bottom: 20px; }
 .product-modal-info .product-bottom { padding-top: 16px; border-top: 1px solid var(--line); margin-bottom: 8px; }
@@ -646,6 +647,7 @@ p { color: var(--brown); }
 }
 
 @media (max-width: 600px) {
+  .hero { aspect-ratio: auto; min-height: calc(100vh - 72px); background-size: contain; background-color: #eadbca; }
   .container { width: min(100% - 30px, 1200px); }
   .section-pad { padding: 80px 0; }
   h1 { font-size: 52px; }
