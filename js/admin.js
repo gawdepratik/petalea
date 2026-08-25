@@ -67,6 +67,7 @@ const exportCsvLink = document.getElementById("exportCsvLink");
 const summaryRevenue = document.getElementById("summaryRevenue");
 const summaryCount = document.getElementById("summaryCount");
 const summaryTopProducts = document.getElementById("summaryTopProducts");
+const summaryTopCities = document.getElementById("summaryTopCities");
 const ordersTableBody = document.getElementById("ordersTableBody");
 const productSearch = document.getElementById("productSearch");
 const orderSearch = document.getElementById("orderSearch");
@@ -393,6 +394,12 @@ async function loadOrders() {
         .join("")
     : "<li>No sales yet.</li>";
 
+  summaryTopCities.innerHTML = (summary.topCities || []).length
+    ? summary.topCities
+        .map((c) => `<li>${c.city} <span>${c.percentOfRevenue}% of revenue · ${formatPrice(c.revenue)} (${c.orderCount} orders)</span></li>`)
+        .join("")
+    : "<li>No city data yet — orders need a pincode to appear here.</li>";
+
   const ORDER_STATUSES = ["new", "confirmed", "shipped", "completed", "cancelled"];
 
   allOrders = await ordersResponse.json();
@@ -423,7 +430,7 @@ function renderOrders() {
             <tr data-id="${o.id}">
               <td>${o.orderRef}</td>
               <td>${new Date(o.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
-              <td class="wrap-cell">${o.customer_name}<br><span class="admin-hint">${o.customer_email}<br>${o.customer_phone}${o.ip_address ? `<br>IP: ${o.ip_address}` : ""}</span></td>
+              <td class="wrap-cell">${o.customer_name}<br><span class="admin-hint">${o.customer_email}<br>${o.customer_phone}${o.city ? `<br>${o.city}${o.pincode ? ` — ${o.pincode}` : ""}` : ""}${o.ip_address ? `<br>IP: ${o.ip_address}` : ""}</span></td>
               <td class="wrap-cell">${o.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}</td>
               <td>${formatPrice(o.total)}</td>
               <td><span class="admin-badge ${o.payment_status === "paid" ? "on" : ""}">${o.payment_status}</span></td>
@@ -690,6 +697,15 @@ function updateManualOrderTotal() {
 
 addOrderItemButton.addEventListener("click", addManualOrderItemRow);
 
+const orderPincodeInput = document.getElementById("orderPincode");
+const orderCityInput = document.getElementById("orderCity");
+orderPincodeInput.addEventListener("input", async () => {
+  const value = orderPincodeInput.value.trim();
+  if (value.length !== 6) return;
+  const result = await lookupCityFromPincode(value);
+  if (result && result.city) orderCityInput.value = result.city;
+});
+
 newOrderButton.addEventListener("click", () => {
   orderForm.reset();
   manualOrderItems.innerHTML = "";
@@ -722,6 +738,8 @@ orderForm.addEventListener("submit", async (event) => {
     customer_email: document.getElementById("orderEmail").value.trim(),
     delivery_address: document.getElementById("orderAddress").value.trim(),
     delivery_date: document.getElementById("orderDeliveryDate").value || null,
+    city: document.getElementById("orderCity").value.trim(),
+    pincode: document.getElementById("orderPincode").value.trim(),
     notes: document.getElementById("orderCustomerNotes").value.trim(),
     payment_status: document.getElementById("orderPaymentStatus").value,
     items
@@ -1071,36 +1089,43 @@ const analyticsUsers = document.getElementById("analyticsUsers");
 const analyticsSessions = document.getElementById("analyticsSessions");
 const analyticsPageViews = document.getElementById("analyticsPageViews");
 const analyticsTopPagesBody = document.getElementById("analyticsTopPagesBody");
+const analyticsTopPagesHeader = document.getElementById("analyticsTopPagesHeader");
+const analyticsLocationsHeading = document.getElementById("analyticsLocationsHeading");
 const analyticsTopLocationsBody = document.getElementById("analyticsTopLocationsBody");
+const analyticsRangeSelect = document.getElementById("analyticsRangeSelect");
+
+analyticsRangeSelect.addEventListener("change", loadAnalytics);
 
 async function loadAnalytics() {
   analyticsUsers.textContent = "—";
   analyticsSessions.textContent = "—";
   analyticsPageViews.textContent = "—";
   analyticsTopPagesBody.innerHTML = `<tr><td colspan="2">Loading…</td></tr>`;
-  analyticsTopLocationsBody.innerHTML = `<tr><td colspan="2">Loading…</td></tr>`;
+  analyticsTopLocationsBody.innerHTML = `<tr><td colspan="3">Loading…</td></tr>`;
 
-  const response = await api("/api/admin/analytics/summary");
+  const response = await api(`/api/admin/analytics/summary?days=${analyticsRangeSelect.value}`);
   if (!response.ok) {
     showError(adminError, "Could not load analytics right now. Check the server's Google Analytics setup.");
     analyticsTopPagesBody.innerHTML = `<tr><td colspan="2">Could not load analytics.</td></tr>`;
-    analyticsTopLocationsBody.innerHTML = `<tr><td colspan="2">Could not load analytics.</td></tr>`;
+    analyticsTopLocationsBody.innerHTML = `<tr><td colspan="3">Could not load analytics.</td></tr>`;
     return;
   }
   hideError(adminError);
 
   const data = await response.json();
-  analyticsUsers.textContent = data.activeUsers7d;
-  analyticsSessions.textContent = data.sessions7d;
-  analyticsPageViews.textContent = data.pageViews7d;
+  analyticsUsers.textContent = data.activeUsers;
+  analyticsSessions.textContent = data.sessions;
+  analyticsPageViews.textContent = data.pageViews;
+  analyticsTopPagesHeader.textContent = `Views (${data.days} days)`;
+  analyticsLocationsHeading.textContent = `Top visitor locations (${data.days} days)`;
 
   analyticsTopPagesBody.innerHTML = data.topPages.length
     ? data.topPages.map((p) => `<tr><td>${p.title}</td><td>${p.views}</td></tr>`).join("")
     : `<tr><td colspan="2">No traffic recorded yet.</td></tr>`;
 
   analyticsTopLocationsBody.innerHTML = (data.topLocations || []).length
-    ? data.topLocations.map((l) => `<tr><td>${l.label}</td><td>${l.activeUsers}</td></tr>`).join("")
-    : `<tr><td colspan="2">No location data yet.</td></tr>`;
+    ? data.topLocations.map((l) => `<tr><td>${l.label}</td><td>${l.activeUsers}</td><td>${l.percentOfVisits}%</td></tr>`).join("")
+    : `<tr><td colspan="3">No location data yet.</td></tr>`;
 }
 
 checkSession();

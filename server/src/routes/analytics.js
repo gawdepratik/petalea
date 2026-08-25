@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get("/admin/analytics/summary", requireAdmin, async (req, res) => {
   try {
-    const data = await getAnalyticsSummary();
+    const data = await getAnalyticsSummary(req.query.days);
     res.json(data);
   } catch (err) {
     console.error("Analytics fetch failed:", err.message);

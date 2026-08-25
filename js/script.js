@@ -47,6 +47,22 @@
   input.min = earliestDeliveryDate();
 })();
 
+(function initPincodeLookup() {
+  const pincodeInput = document.getElementById("checkoutPincode");
+  const cityInput = document.getElementById("checkoutCity");
+  if (!pincodeInput || !cityInput) return;
+
+  pincodeInput.addEventListener("input", async () => {
+    const value = pincodeInput.value.trim();
+    if (value.length !== 6) return;
+
+    const result = await lookupCityFromPincode(value);
+    if (result && result.city) {
+      cityInput.value = result.city;
+    }
+  });
+})();
+
 const cart = [];
 
 const cartButton = document.getElementById("cartButton");
@@ -269,6 +285,8 @@ checkoutFormView.addEventListener("submit", async (event) => {
     customer_email: document.getElementById("checkoutEmail").value.trim(),
     delivery_address: document.getElementById("checkoutAddress").value.trim(),
     delivery_date: deliveryDate || null,
+    city: document.getElementById("checkoutCity").value.trim(),
+    pincode: document.getElementById("checkoutPincode").value.trim(),
     notes: document.getElementById("checkoutNotes").value.trim(),
     gift_message: document.getElementById("checkoutGiftMessage").value.trim(),
     items: cart.map(item => ({ id: item.id, quantity: item.quantity })),

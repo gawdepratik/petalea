@@ -13,15 +13,18 @@ function getClient() {
   return client;
 }
 
-async function getAnalyticsSummary() {
+const ALLOWED_DAY_RANGES = [7, 30, 90];
+
+async function getAnalyticsSummary(days = 7) {
   const propertyId = process.env.GA_PROPERTY_ID;
   if (!propertyId || !process.env.GA_SERVICE_ACCOUNT_EMAIL) {
     throw new Error("Google Analytics is not configured on this server");
   }
+  const range = ALLOWED_DAY_RANGES.includes(Number(days)) ? Number(days) : 7;
 
   const analyticsDataClient = getClient();
   const property = `properties/${propertyId}`;
-  const dateRanges = [{ startDate: "7daysAgo", endDate: "today" }];
+  const dateRanges = [{ startDate: `${range}daysAgo`, endDate: "today" }];
 
   const [[totals], [topPages], [topLocations]] = await Promise.all([
     analyticsDataClient.runReport({
@@ -48,19 +51,25 @@ async function getAnalyticsSummary() {
   ]);
 
   const totalValues = totals.rows?.[0]?.metricValues || [];
+  const totalActiveUsers = Number(totalValues[0]?.value || 0);
 
   return {
-    activeUsers7d: Number(totalValues[0]?.value || 0),
-    sessions7d: Number(totalValues[1]?.value || 0),
-    pageViews7d: Number(totalValues[2]?.value || 0),
+    days: range,
+    activeUsers: totalActiveUsers,
+    sessions: Number(totalValues[1]?.value || 0),
+    pageViews: Number(totalValues[2]?.value || 0),
     topPages: (topPages.rows || []).map((r) => ({
       title: r.dimensionValues[0].value,
       views: Number(r.metricValues[0].value)
     })),
-    topLocations: (topLocations.rows || []).map((r) => ({
-      label: r.dimensionValues[0].value,
-      activeUsers: Number(r.metricValues[0].value)
-    }))
+    topLocations: (topLocations.rows || []).map((r) => {
+      const activeUsers = Number(r.metricValues[0].value);
+      return {
+        label: r.dimensionValues[0].value,
+        activeUsers,
+        percentOfVisits: totalActiveUsers > 0 ? Math.round((activeUsers / totalActiveUsers) * 1000) / 10 : 0
+      };
+    })
   };
 }
 

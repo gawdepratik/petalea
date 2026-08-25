@@ -19,3 +19,19 @@ function earliestDeliveryDate() {
   date.setDate(date.getDate() + MIN_DELIVERY_LEAD_DAYS);
   return date.toISOString().slice(0, 10);
 }
+
+// Looks up the city/state for an Indian PIN code via India Post's free public
+// API. Returns null on any failure (invalid pincode, network error, no match)
+// so callers can just leave the city field for manual entry.
+async function lookupCityFromPincode(pincode) {
+  if (!/^\d{6}$/.test(pincode)) return null;
+  try {
+    const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+    const data = await response.json();
+    const postOffice = data?.[0]?.PostOffice?.[0];
+    if (!postOffice) return null;
+    return { city: postOffice.District || postOffice.Name || "", state: postOffice.State || "" };
+  } catch {
+    return null;
+  }
+}
