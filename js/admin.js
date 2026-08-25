@@ -699,12 +699,33 @@ addOrderItemButton.addEventListener("click", addManualOrderItemRow);
 
 const orderPincodeInput = document.getElementById("orderPincode");
 const orderCityInput = document.getElementById("orderCity");
+const orderStateInput = document.getElementById("orderState");
 orderPincodeInput.addEventListener("input", async () => {
   const value = orderPincodeInput.value.trim();
   if (value.length !== 6) return;
   const result = await lookupCityFromPincode(value);
-  if (result && result.city) orderCityInput.value = result.city;
+  if (result && result.city) {
+    orderCityInput.value = result.city;
+    if (result.state) orderStateInput.value = result.state;
+  }
 });
+
+function assembleOrderAddress() {
+  const line1 = document.getElementById("orderAddressLine1").value.trim();
+  const line2 = document.getElementById("orderAddressLine2").value.trim();
+  const landmark = document.getElementById("orderLandmark").value.trim();
+  const city = orderCityInput.value.trim();
+  const state = orderStateInput.value.trim();
+  const pincode = orderPincodeInput.value.trim();
+
+  const parts = [line1, line2];
+  if (landmark) parts.push(`Near ${landmark}`);
+  const cityLine = [city, state].filter(Boolean).join(", ");
+  if (cityLine) parts.push(cityLine);
+  if (pincode) parts.push(pincode);
+
+  return parts.filter(Boolean).join(", ");
+}
 
 newOrderButton.addEventListener("click", () => {
   orderForm.reset();
@@ -736,7 +757,7 @@ orderForm.addEventListener("submit", async (event) => {
     customer_name: document.getElementById("orderName").value.trim(),
     customer_phone: document.getElementById("orderPhone").value.trim(),
     customer_email: document.getElementById("orderEmail").value.trim(),
-    delivery_address: document.getElementById("orderAddress").value.trim(),
+    delivery_address: assembleOrderAddress(),
     delivery_date: document.getElementById("orderDeliveryDate").value || null,
     city: document.getElementById("orderCity").value.trim(),
     pincode: document.getElementById("orderPincode").value.trim(),
