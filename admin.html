@@ -122,7 +122,10 @@
 
         <div class="admin-actions admin-panel-actions">
           <input type="search" id="orderSearch" class="admin-search" placeholder="Search by name, phone, email, or order ref…">
-          <button class="button button-dark" id="newOrderButton" type="button">Add order</button>
+          <div class="admin-actions">
+            <button class="button button-outline" id="toggleDeletedOrders" type="button">View deleted</button>
+            <button class="button button-dark" id="newOrderButton" type="button">Add order</button>
+          </div>
         </div>
 
         <div class="admin-table-wrap">
@@ -141,6 +144,7 @@
                 <th>Tracking</th>
                 <th>Refund</th>
                 <th>Notes</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="ordersTableBody"></tbody>
@@ -282,6 +286,23 @@
         <div class="admin-modal-actions">
           <button type="button" class="button button-outline" id="cancelNotesButton">Cancel</button>
           <button type="submit" class="button button-dark">Save notes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="admin-modal" id="deleteOrderModal" hidden>
+    <div class="admin-modal-overlay" id="deleteOrderModalOverlay"></div>
+    <div class="admin-modal-panel">
+      <h3>Delete order</h3>
+      <p class="admin-hint">This removes <strong id="deleteOrderRefLabel"></strong> from the main orders list and reports. It isn't permanent — you can restore it later from "View deleted". Type the order reference below to confirm.</p>
+      <form id="deleteOrderForm" class="admin-form">
+        <input type="hidden" id="deleteOrderId">
+        <label>Order reference<input type="text" id="deleteOrderConfirmInput" placeholder="PTL-000000" autocomplete="off" required></label>
+        <p id="deleteOrderError" class="admin-error" hidden></p>
+        <div class="admin-modal-actions">
+          <button type="button" class="button button-outline" id="cancelDeleteOrderButton">Cancel</button>
+          <button type="submit" class="button button-dark" id="confirmDeleteOrderButton" disabled>Delete order</button>
         </div>
       </form>
     </div>

@@ -195,6 +195,9 @@ p { color: var(--brown); }
 .button-light:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(0,0,0,.18); }
 .button-outline { border-color: var(--espresso); color: var(--espresso); margin-top: 24px; }
 .button-outline:hover { background: var(--espresso); color: var(--white); }
+.button:disabled { opacity: .4; cursor: not-allowed; }
+.button:disabled:hover { transform: none; box-shadow: none; background: var(--espresso); color: var(--white); }
+.button-outline:disabled:hover { background: none; color: var(--espresso); }
 
 .text-link { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--espresso); font-weight: 500; }
 .text-link span { margin-left: 8px; display: inline-block; transition: margin .3s var(--ease); }

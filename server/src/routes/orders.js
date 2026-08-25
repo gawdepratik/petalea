@@ -222,7 +222,7 @@ router.post("/admin/orders", requireAdmin, async (req, res) => {
 
 router.get("/admin/orders", requireAdmin, async (req, res) => {
   const { from, to } = parseDateRange(req.query);
-  const conditions = [];
+  const conditions = [req.query.deleted === "true" ? "o.deleted_at IS NOT NULL" : "o.deleted_at IS NULL"];
   const params = [];
 
   if (from) {
@@ -272,6 +272,68 @@ router.put("/admin/orders/:id/notes", requireAdmin, async (req, res) => {
 
   if (!rows[0]) {
     return res.status(404).json({ error: "Order not found" });
+  }
+  res.json({ ...rows[0], orderRef: formatOrderRef(rows[0].id) });
+});
+
+router.delete("/admin/orders/:id", requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { confirm = "" } = req.body;
+
+  const { rows: existingRows } = await pool.query(
+    "SELECT id, status, deleted_at FROM orders WHERE id = $1",
+    [id]
+  );
+  const existing = existingRows[0];
+  if (!existing) {
+    return res.status(404).json({ error: "Order not found" });
+  }
+  if (existing.deleted_at) {
+    return res.status(400).json({ error: "Order is already deleted" });
+  }
+
+  const expectedRef = formatOrderRef(existing.id);
+  if (confirm.trim().toUpperCase() !== expectedRef) {
+    return res.status(400).json({ error: `Type ${expectedRef} exactly to confirm deletion` });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    if (existing.status !== "cancelled") {
+      const { rows: orderItems } = await client.query(
+        "SELECT product_id, quantity FROM order_items WHERE order_id = $1 AND product_id IS NOT NULL",
+        [id]
+      );
+      for (const item of orderItems) {
+        await client.query(
+          "UPDATE products SET stock_quantity = stock_quantity + $1 WHERE id = $2 AND stock_quantity IS NOT NULL",
+          [item.quantity, item.product_id]
+        );
+      }
+    }
+
+    await client.query("UPDATE orders SET deleted_at = now() WHERE id = $1", [id]);
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(err);
+    return res.status(500).json({ error: "Could not delete order" });
+  } finally {
+    client.release();
+  }
+
+  res.json({ ok: true, orderRef: expectedRef });
+});
+
+router.post("/admin/orders/:id/restore", requireAdmin, async (req, res) => {
+  const { rows } = await pool.query(
+    "UPDATE orders SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *",
+    [req.params.id]
+  );
+  if (!rows[0]) {
+    return res.status(404).json({ error: "Order not found, or it isn't deleted" });
   }
   res.json({ ...rows[0], orderRef: formatOrderRef(rows[0].id) });
 });
@@ -382,7 +444,7 @@ router.get("/orders/lookup", async (req, res) => {
   }
 
   const { rows } = await pool.query(
-    "SELECT * FROM orders WHERE id = $1 AND lower(customer_email) = $2",
+    "SELECT * FROM orders WHERE id = $1 AND lower(customer_email) = $2 AND deleted_at IS NULL",
     [Number(match[1]), email]
   );
 
@@ -411,7 +473,7 @@ router.get("/orders/lookup", async (req, res) => {
 
 router.get("/admin/reports/summary", requireAdmin, async (req, res) => {
   const { from, to } = parseDateRange(req.query);
-  const conditions = [];
+  const conditions = ["deleted_at IS NULL"];
   const params = [];
 
   if (from) {
@@ -446,7 +508,7 @@ router.get("/admin/reports/summary", requireAdmin, async (req, res) => {
 
 router.get("/admin/reports/export.csv", requireAdmin, async (req, res) => {
   const { from, to } = parseDateRange(req.query);
-  const conditions = [];
+  const conditions = ["deleted_at IS NULL"];
   const params = [];
 
   if (from) {

@@ -71,9 +71,11 @@ const ordersTableBody = document.getElementById("ordersTableBody");
 const productSearch = document.getElementById("productSearch");
 const orderSearch = document.getElementById("orderSearch");
 const productStock = document.getElementById("productStock");
+const toggleDeletedOrders = document.getElementById("toggleDeletedOrders");
 
 let allProducts = [];
 let allOrders = [];
+let viewingDeletedOrders = false;
 
 let pendingEmail = "";
 
@@ -367,9 +369,12 @@ async function loadOrders() {
   const query = currentFilterQuery();
   updateExportLink();
 
+  const ordersQuery = new URLSearchParams(query);
+  if (viewingDeletedOrders) ordersQuery.set("deleted", "true");
+
   const [summaryResponse, ordersResponse] = await Promise.all([
     api(`/api/admin/reports/summary${query ? "?" + query : ""}`),
-    api(`/api/admin/orders${query ? "?" + query : ""}`)
+    api(`/api/admin/orders?${ordersQuery.toString()}`)
   ]);
 
   if (!summaryResponse.ok || !ordersResponse.ok) {
@@ -426,14 +431,26 @@ function renderOrders() {
               <td>${o.tracking_number || "—"}</td>
               <td class="wrap-cell">${o.refund_amount > 0 ? `${formatPrice(o.refund_amount)}${o.refund_note ? `<br><span class="admin-hint">${o.refund_note}</span>` : ""}` : "—"}</td>
               <td><button class="link-button" data-action="notes" data-id="${o.id}">${o.admin_notes ? "Edit notes" : "Add notes"}</button></td>
+              <td>${
+                viewingDeletedOrders
+                  ? `<button class="link-button" data-action="restore-order" data-id="${o.id}">Restore</button>`
+                  : `<button class="link-button" data-action="delete-order" data-id="${o.id}" data-ref="${o.orderRef}">Delete</button>`
+              }</td>
             </tr>
           `
         )
         .join("")
-    : `<tr><td colspan="12">No orders match.</td></tr>`;
+    : `<tr><td colspan="13">${viewingDeletedOrders ? "No deleted orders." : "No orders match."}</td></tr>`;
 }
 
 orderSearch.addEventListener("input", renderOrders);
+
+toggleDeletedOrders.addEventListener("click", () => {
+  viewingDeletedOrders = !viewingDeletedOrders;
+  toggleDeletedOrders.textContent = viewingDeletedOrders ? "Back to active orders" : "View deleted";
+  newOrderButton.hidden = viewingDeletedOrders;
+  loadOrders();
+});
 
 ordersTableBody.addEventListener("change", async (event) => {
   const select = event.target.closest(".order-status-select");
@@ -525,6 +542,77 @@ notesForm.addEventListener("submit", async (event) => {
   hideError(adminError);
   closeNotesModal();
   showToast("Notes saved.");
+  loadOrders();
+});
+
+/* ---------------------------- Delete / restore orders ---------------------------- */
+const deleteOrderModal = document.getElementById("deleteOrderModal");
+const deleteOrderModalOverlay = document.getElementById("deleteOrderModalOverlay");
+const deleteOrderForm = document.getElementById("deleteOrderForm");
+const deleteOrderId = document.getElementById("deleteOrderId");
+const deleteOrderRefLabel = document.getElementById("deleteOrderRefLabel");
+const deleteOrderConfirmInput = document.getElementById("deleteOrderConfirmInput");
+const deleteOrderError = document.getElementById("deleteOrderError");
+const confirmDeleteOrderButton = document.getElementById("confirmDeleteOrderButton");
+const cancelDeleteOrderButton = document.getElementById("cancelDeleteOrderButton");
+
+function openDeleteOrderModal(id, ref) {
+  deleteOrderForm.reset();
+  hideError(deleteOrderError);
+  confirmDeleteOrderButton.disabled = true;
+  deleteOrderId.value = id;
+  deleteOrderId.dataset.ref = ref;
+  deleteOrderRefLabel.textContent = ref;
+  deleteOrderModal.hidden = false;
+  deleteOrderConfirmInput.focus();
+}
+
+function closeDeleteOrderModal() {
+  deleteOrderModal.hidden = true;
+}
+cancelDeleteOrderButton.addEventListener("click", closeDeleteOrderModal);
+deleteOrderModalOverlay.addEventListener("click", closeDeleteOrderModal);
+
+deleteOrderConfirmInput.addEventListener("input", () => {
+  const expected = deleteOrderId.dataset.ref || "";
+  confirmDeleteOrderButton.disabled = deleteOrderConfirmInput.value.trim().toUpperCase() !== expected;
+});
+
+deleteOrderForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const response = await api(`/api/admin/orders/${deleteOrderId.value}`, {
+    method: "DELETE",
+    body: JSON.stringify({ confirm: deleteOrderConfirmInput.value.trim() })
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    showError(deleteOrderError, body.error || "Could not delete that order.");
+    return;
+  }
+  closeDeleteOrderModal();
+  hideError(adminError);
+  showToast(`${deleteOrderId.dataset.ref} deleted. You can restore it from "View deleted".`);
+  loadOrders();
+});
+
+ordersTableBody.addEventListener("click", async (event) => {
+  const deleteButton = event.target.closest("button[data-action='delete-order']");
+  if (deleteButton) {
+    openDeleteOrderModal(deleteButton.dataset.id, deleteButton.dataset.ref);
+    return;
+  }
+
+  const restoreButton = event.target.closest("button[data-action='restore-order']");
+  if (!restoreButton) return;
+
+  const response = await api(`/api/admin/orders/${restoreButton.dataset.id}/restore`, { method: "POST" });
+  if (!response.ok) {
+    showError(adminError, "Could not restore that order.");
+    return;
+  }
+  hideError(adminError);
+  showToast("Order restored.");
   loadOrders();
 });
 

@@ -44,6 +44,7 @@
 }
 
 .admin-actions { display: flex; gap: 14px; align-items: center; }
+.admin-actions .button[hidden] { display: none; }
 .admin-panel-actions { justify-content: space-between; margin-bottom: 20px; }
 
 .admin-search {
