@@ -15,9 +15,11 @@ const customOrderRoutes = require("./routes/customOrders");
 
 const app = express();
 
-// Render sits behind a single reverse proxy hop; trust it so req.ip reflects
-// the real visitor's address (from X-Forwarded-For) instead of the proxy's.
-app.set("trust proxy", 1);
+// Render's routing has more than one internal hop in front of the app, so
+// trusting a fixed hop count (e.g. 1) resolves to an internal 10.x address
+// instead of the real visitor IP. Trusting the whole chain takes the
+// left-most (original client) entry in X-Forwarded-For instead.
+app.set("trust proxy", true);
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
   .split(",")
