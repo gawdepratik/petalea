@@ -57,13 +57,16 @@ app.use((err, req, res, next) => {
 
 process.on("unhandledRejection", (err) => console.error("Unhandled rejection:", err));
 
-// Permanently remove deleted orders older than 48h (unless marked to keep).
-// Runs on startup (covers the app waking from sleep on a free-tier host)
-// and hourly after that while the process stays alive.
-orderRoutes.purgeExpiredDeletedOrders().catch((err) => console.error("Startup order purge failed:", err.message));
-setInterval(() => {
-  orderRoutes.purgeExpiredDeletedOrders().catch((err) => console.error("Scheduled order purge failed:", err.message));
-}, 60 * 60 * 1000);
+// Permanently remove deleted orders/custom order requests older than 48h
+// (unless marked to keep). Runs on startup (covers the app waking from
+// sleep on a free-tier host) and hourly after that while the process stays
+// alive.
+function runScheduledPurges() {
+  orderRoutes.purgeExpiredDeletedOrders().catch((err) => console.error("Order purge failed:", err.message));
+  customOrderRoutes.purgeExpiredCustomOrderRequests().catch((err) => console.error("Custom order purge failed:", err.message));
+}
+runScheduledPurges();
+setInterval(runScheduledPurges, 60 * 60 * 1000);
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => console.log(`PETALEA server listening on port ${port}`));

@@ -944,15 +944,24 @@ reviewsTableBody.addEventListener("click", async (event) => {
 /* ---------------------------- Custom Orders ---------------------------- */
 const customOrdersTableBody = document.getElementById("customOrdersTableBody");
 const CUSTOM_ORDER_STATUSES = ["new", "contacted", "completed"];
+const toggleDeletedCustomOrders = document.getElementById("toggleDeletedCustomOrders");
+const deletedCustomOrdersHint = document.getElementById("deletedCustomOrdersHint");
+let viewingDeletedCustomOrders = false;
+let allCustomOrders = [];
 
 async function loadCustomOrders() {
-  const response = await api("/api/admin/custom-orders");
+  const response = await api(`/api/admin/custom-orders${viewingDeletedCustomOrders ? "?deleted=true" : ""}`);
   if (!response.ok) {
     showError(adminError, "Could not load custom order requests.");
     return;
   }
   hideError(adminError);
-  const requests = await response.json();
+  allCustomOrders = await response.json();
+  renderCustomOrders();
+}
+
+function renderCustomOrders() {
+  const requests = allCustomOrders;
 
   customOrdersTableBody.innerHTML = requests.length
     ? requests
@@ -967,18 +976,51 @@ async function loadCustomOrders() {
               <td class="wrap-cell">${r.flower_preferences || "—"}</td>
               <td class="wrap-cell">${r.notes || "—"}</td>
               <td>
-                <select class="order-status-select custom-order-status-select" data-id="${r.id}">
+                <select class="order-status-select custom-order-status-select" data-id="${r.id}" ${viewingDeletedCustomOrders ? "disabled" : ""}>
                   ${CUSTOM_ORDER_STATUSES.map((s) => `<option value="${s}" ${r.status === s ? "selected" : ""}>${s}</option>`).join("")}
                 </select>
               </td>
+              <td class="${viewingDeletedCustomOrders ? "wrap-cell-sm" : ""}">${
+                viewingDeletedCustomOrders
+                  ? `<button class="link-button" data-action="restore-custom-order" data-id="${r.id}">Restore</button>
+                     <label class="admin-hint" style="display:block; margin-top:4px; cursor:pointer;">
+                       <input type="checkbox" data-action="toggle-custom-order-purge-protect" data-id="${r.id}" ${r.purge_protected ? "checked" : ""}> Keep
+                     </label>
+                     <span class="admin-hint">${r.purge_protected ? "Won't auto-delete" : `Auto-deletes ${purgeDeadlineLabel(r.deleted_at)}`}</span>`
+                  : `<button class="link-button" data-action="delete-custom-order" data-id="${r.id}">Delete</button>`
+              }</td>
             </tr>
           `
         )
         .join("")
-    : `<tr><td colspan="8">No custom order requests yet.</td></tr>`;
+    : `<tr><td colspan="9">${viewingDeletedCustomOrders ? "No deleted requests." : "No custom order requests yet."}</td></tr>`;
 }
 
+toggleDeletedCustomOrders.addEventListener("click", () => {
+  viewingDeletedCustomOrders = !viewingDeletedCustomOrders;
+  toggleDeletedCustomOrders.textContent = viewingDeletedCustomOrders ? "Back to active requests" : "View deleted";
+  deletedCustomOrdersHint.hidden = !viewingDeletedCustomOrders;
+  loadCustomOrders();
+});
+
 customOrdersTableBody.addEventListener("change", async (event) => {
+  const purgeCheckbox = event.target.closest("input[data-action='toggle-custom-order-purge-protect']");
+  if (purgeCheckbox) {
+    const response = await api(`/api/admin/custom-orders/${purgeCheckbox.dataset.id}/purge-protection`, {
+      method: "PUT",
+      body: JSON.stringify({ protect: purgeCheckbox.checked })
+    });
+    if (!response.ok) {
+      showError(adminError, "Could not update that setting.");
+      purgeCheckbox.checked = !purgeCheckbox.checked;
+      return;
+    }
+    hideError(adminError);
+    showToast(purgeCheckbox.checked ? "Request kept — it won't auto-delete." : "Request will auto-delete on the normal schedule.");
+    loadCustomOrders();
+    return;
+  }
+
   const select = event.target.closest(".custom-order-status-select");
   if (!select) return;
 
@@ -993,6 +1035,35 @@ customOrdersTableBody.addEventListener("change", async (event) => {
   }
   hideError(adminError);
   showToast("Custom order request updated.");
+});
+
+customOrdersTableBody.addEventListener("click", async (event) => {
+  const deleteButton = event.target.closest("button[data-action='delete-custom-order']");
+  if (deleteButton) {
+    if (!confirm("Delete this custom order request? It moves to \"View deleted\" and is permanently removed after 48 hours unless kept.")) return;
+
+    const response = await api(`/api/admin/custom-orders/${deleteButton.dataset.id}`, { method: "DELETE" });
+    if (!response.ok) {
+      showError(adminError, "Could not delete that request.");
+      return;
+    }
+    hideError(adminError);
+    showToast("Request deleted.");
+    loadCustomOrders();
+    return;
+  }
+
+  const restoreButton = event.target.closest("button[data-action='restore-custom-order']");
+  if (!restoreButton) return;
+
+  const response = await api(`/api/admin/custom-orders/${restoreButton.dataset.id}/restore`, { method: "POST" });
+  if (!response.ok) {
+    showError(adminError, "Could not restore that request.");
+    return;
+  }
+  hideError(adminError);
+  showToast("Request restored.");
+  loadCustomOrders();
 });
 
 /* ---------------------------- Analytics ---------------------------- */

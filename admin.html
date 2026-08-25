@@ -194,6 +194,12 @@
       </div>
 
       <div id="customOrdersPanel" hidden>
+        <div class="admin-actions admin-panel-actions">
+          <span></span>
+          <button class="button button-outline" id="toggleDeletedCustomOrders" type="button">View deleted</button>
+        </div>
+        <p class="admin-hint" id="deletedCustomOrdersHint" hidden>Deleted requests are permanently removed after 48 hours unless marked "Keep".</p>
+
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
@@ -206,6 +212,7 @@
                 <th>Preferences</th>
                 <th>Notes</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="customOrdersTableBody"></tbody>

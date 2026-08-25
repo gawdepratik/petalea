@@ -73,7 +73,11 @@ Log into the admin panel to view and manage this request.`;
 });
 
 router.get("/admin/custom-orders", requireAdmin, async (req, res) => {
-  const { rows } = await pool.query("SELECT * FROM custom_order_requests ORDER BY created_at DESC");
+  const { rows } = await pool.query(
+    `SELECT * FROM custom_order_requests
+     WHERE deleted_at IS ${req.query.deleted === "true" ? "NOT NULL" : "NULL"}
+     ORDER BY created_at DESC`
+  );
   res.json(rows);
 });
 
@@ -94,4 +98,55 @@ router.put("/admin/custom-orders/:id/status", requireAdmin, async (req, res) => 
   res.json(rows[0]);
 });
 
+router.delete("/admin/custom-orders/:id", requireAdmin, async (req, res) => {
+  const { rows } = await pool.query(
+    "UPDATE custom_order_requests SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL RETURNING id",
+    [req.params.id]
+  );
+  if (!rows[0]) {
+    return res.status(404).json({ error: "Request not found, or already deleted" });
+  }
+  res.json({ ok: true });
+});
+
+router.post("/admin/custom-orders/:id/restore", requireAdmin, async (req, res) => {
+  const { rows } = await pool.query(
+    "UPDATE custom_order_requests SET deleted_at = NULL, purge_protected = false WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *",
+    [req.params.id]
+  );
+  if (!rows[0]) {
+    return res.status(404).json({ error: "Request not found, or it isn't deleted" });
+  }
+  res.json(rows[0]);
+});
+
+router.put("/admin/custom-orders/:id/purge-protection", requireAdmin, async (req, res) => {
+  const { protect } = req.body;
+  const { rows } = await pool.query(
+    "UPDATE custom_order_requests SET purge_protected = $1 WHERE id = $2 AND deleted_at IS NOT NULL RETURNING *",
+    [!!protect, req.params.id]
+  );
+  if (!rows[0]) {
+    return res.status(404).json({ error: "Request not found, or it isn't deleted" });
+  }
+  res.json(rows[0]);
+});
+
+const CUSTOM_ORDER_PURGE_AFTER_HOURS = 48;
+
+async function purgeExpiredCustomOrderRequests() {
+  const { rows } = await pool.query(
+    `DELETE FROM custom_order_requests
+     WHERE deleted_at IS NOT NULL
+       AND deleted_at < now() - interval '${CUSTOM_ORDER_PURGE_AFTER_HOURS} hours'
+       AND purge_protected = false
+     RETURNING id`
+  );
+  if (rows.length) {
+    console.log(`Purged ${rows.length} expired deleted custom order request(s): ${rows.map((r) => r.id).join(", ")}`);
+  }
+  return rows.length;
+}
+
 module.exports = router;
+module.exports.purgeExpiredCustomOrderRequests = purgeExpiredCustomOrderRequests;
