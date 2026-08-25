@@ -72,6 +72,7 @@ const productSearch = document.getElementById("productSearch");
 const orderSearch = document.getElementById("orderSearch");
 const productStock = document.getElementById("productStock");
 const toggleDeletedOrders = document.getElementById("toggleDeletedOrders");
+const deletedOrdersHint = document.getElementById("deletedOrdersHint");
 
 let allProducts = [];
 let allOrders = [];
@@ -398,6 +399,11 @@ async function loadOrders() {
   renderOrders();
 }
 
+function purgeDeadlineLabel(deletedAt) {
+  const deadline = new Date(new Date(deletedAt).getTime() + 48 * 60 * 60 * 1000);
+  return deadline.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+}
+
 function renderOrders() {
   const ORDER_STATUSES = ["new", "confirmed", "shipped", "completed", "cancelled"];
   const term = orderSearch.value.trim().toLowerCase();
@@ -431,9 +437,13 @@ function renderOrders() {
               <td>${o.tracking_number || "—"}</td>
               <td class="wrap-cell-sm">${o.refund_amount > 0 ? `${formatPrice(o.refund_amount)}${o.refund_note ? `<br><span class="admin-hint">${o.refund_note}</span>` : ""}` : "—"}</td>
               <td><button class="link-button" data-action="notes" data-id="${o.id}">${o.admin_notes ? "Edit notes" : "Add notes"}</button></td>
-              <td>${
+              <td class="${viewingDeletedOrders ? "wrap-cell-sm" : ""}">${
                 viewingDeletedOrders
-                  ? `<button class="link-button" data-action="restore-order" data-id="${o.id}">Restore</button>`
+                  ? `<button class="link-button" data-action="restore-order" data-id="${o.id}">Restore</button>
+                     <label class="admin-hint" style="display:block; margin-top:4px; cursor:pointer;">
+                       <input type="checkbox" data-action="toggle-purge-protect" data-id="${o.id}" ${o.purge_protected ? "checked" : ""}> Keep
+                     </label>
+                     <span class="admin-hint">${o.purge_protected ? "Won't auto-delete" : `Auto-deletes ${purgeDeadlineLabel(o.deleted_at)}`}</span>`
                   : `<button class="link-button" data-action="delete-order" data-id="${o.id}" data-ref="${o.orderRef}">Delete</button>`
               }</td>
             </tr>
@@ -449,10 +459,28 @@ toggleDeletedOrders.addEventListener("click", () => {
   viewingDeletedOrders = !viewingDeletedOrders;
   toggleDeletedOrders.textContent = viewingDeletedOrders ? "Back to active orders" : "View deleted";
   newOrderButton.hidden = viewingDeletedOrders;
+  deletedOrdersHint.hidden = !viewingDeletedOrders;
   loadOrders();
 });
 
 ordersTableBody.addEventListener("change", async (event) => {
+  const purgeCheckbox = event.target.closest("input[data-action='toggle-purge-protect']");
+  if (purgeCheckbox) {
+    const response = await api(`/api/admin/orders/${purgeCheckbox.dataset.id}/purge-protection`, {
+      method: "PUT",
+      body: JSON.stringify({ protect: purgeCheckbox.checked })
+    });
+    if (!response.ok) {
+      showError(adminError, "Could not update that setting.");
+      purgeCheckbox.checked = !purgeCheckbox.checked;
+      return;
+    }
+    hideError(adminError);
+    showToast(purgeCheckbox.checked ? "Order kept — it won't auto-delete." : "Order will auto-delete on the normal schedule.");
+    loadOrders();
+    return;
+  }
+
   const select = event.target.closest(".order-status-select");
   if (!select) return;
 

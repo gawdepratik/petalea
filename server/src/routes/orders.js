@@ -330,7 +330,7 @@ router.delete("/admin/orders/:id", requireAdmin, async (req, res) => {
 
 router.post("/admin/orders/:id/restore", requireAdmin, async (req, res) => {
   const { rows } = await pool.query(
-    "UPDATE orders SET deleted_at = NULL WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *",
+    "UPDATE orders SET deleted_at = NULL, purge_protected = false WHERE id = $1 AND deleted_at IS NOT NULL RETURNING *",
     [req.params.id]
   );
   if (!rows[0]) {
@@ -338,6 +338,34 @@ router.post("/admin/orders/:id/restore", requireAdmin, async (req, res) => {
   }
   res.json({ ...rows[0], orderRef: formatOrderRef(rows[0].id) });
 });
+
+router.put("/admin/orders/:id/purge-protection", requireAdmin, async (req, res) => {
+  const { protect } = req.body;
+  const { rows } = await pool.query(
+    "UPDATE orders SET purge_protected = $1 WHERE id = $2 AND deleted_at IS NOT NULL RETURNING *",
+    [!!protect, req.params.id]
+  );
+  if (!rows[0]) {
+    return res.status(404).json({ error: "Order not found, or it isn't deleted" });
+  }
+  res.json({ ...rows[0], orderRef: formatOrderRef(rows[0].id) });
+});
+
+const PURGE_AFTER_HOURS = 48;
+
+async function purgeExpiredDeletedOrders() {
+  const { rows } = await pool.query(
+    `DELETE FROM orders
+     WHERE deleted_at IS NOT NULL
+       AND deleted_at < now() - interval '${PURGE_AFTER_HOURS} hours'
+       AND purge_protected = false
+     RETURNING id`
+  );
+  if (rows.length) {
+    console.log(`Purged ${rows.length} expired deleted order(s): ${rows.map((r) => r.id).join(", ")}`);
+  }
+  return rows.length;
+}
 
 const VALID_STATUSES = ["new", "confirmed", "shipped", "completed", "cancelled"];
 
@@ -546,3 +574,4 @@ router.get("/admin/reports/export.csv", requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.purgeExpiredDeletedOrders = purgeExpiredDeletedOrders;
