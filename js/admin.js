@@ -700,6 +700,7 @@ addOrderItemButton.addEventListener("click", addManualOrderItemRow);
 const orderPincodeInput = document.getElementById("orderPincode");
 const orderCityInput = document.getElementById("orderCity");
 const orderStateInput = document.getElementById("orderState");
+const orderAreaSelect = document.getElementById("orderArea");
 orderPincodeInput.addEventListener("input", async () => {
   const value = orderPincodeInput.value.trim();
   if (value.length !== 6) return;
@@ -707,18 +708,24 @@ orderPincodeInput.addEventListener("input", async () => {
   if (result && result.city) {
     orderCityInput.value = result.city;
     if (result.state) orderStateInput.value = result.state;
+    if (orderAreaSelect && result.areas && result.areas.length) {
+      orderAreaSelect.innerHTML = result.areas.map((a) => `<option value="${a}">${a}</option>`).join("");
+    } else if (orderAreaSelect) {
+      orderAreaSelect.innerHTML = `<option value="">No specific areas found</option>`;
+    }
   }
 });
 
 function assembleOrderAddress() {
   const line1 = document.getElementById("orderAddressLine1").value.trim();
+  const area = orderAreaSelect.value.trim();
   const line2 = document.getElementById("orderAddressLine2").value.trim();
   const landmark = document.getElementById("orderLandmark").value.trim();
   const city = orderCityInput.value.trim();
   const state = orderStateInput.value.trim();
   const pincode = orderPincodeInput.value.trim();
 
-  const parts = [line1, line2];
+  const parts = [line1, area, line2];
   if (landmark) parts.push(`Near ${landmark}`);
   const cityLine = [city, state].filter(Boolean).join(", ");
   if (cityLine) parts.push(cityLine);

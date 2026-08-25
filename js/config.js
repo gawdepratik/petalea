@@ -20,17 +20,25 @@ function earliestDeliveryDate() {
   return date.toISOString().slice(0, 10);
 }
 
-// Looks up the city/state for an Indian PIN code via India Post's free public
-// API. Returns null on any failure (invalid pincode, network error, no match)
-// so callers can just leave the city field for manual entry.
+// Looks up the city/state/localities for an Indian PIN code via India Post's
+// free public API. A single 6-digit pincode often covers several distinct
+// post offices (localities) - e.g. Mumbai 400001 covers ~7 - so this returns
+// the full list of area names alongside the coarser city/state, letting
+// callers offer a locality picker for precision beyond just the city.
+// Returns null on any failure (invalid pincode, network error, no match) so
+// callers can just leave the fields for manual entry.
 async function lookupCityFromPincode(pincode) {
   if (!/^\d{6}$/.test(pincode)) return null;
   try {
     const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
     const data = await response.json();
-    const postOffice = data?.[0]?.PostOffice?.[0];
-    if (!postOffice) return null;
-    return { city: postOffice.District || postOffice.Name || "", state: postOffice.State || "" };
+    const postOffices = data?.[0]?.PostOffice || [];
+    if (!postOffices.length) return null;
+    return {
+      city: postOffices[0].District || postOffices[0].Name || "",
+      state: postOffices[0].State || "",
+      areas: postOffices.map((po) => po.Name).filter(Boolean)
+    };
   } catch {
     return null;
   }

@@ -49,13 +49,14 @@
 
 function assembleCheckoutAddress() {
   const line1 = document.getElementById("checkoutAddressLine1").value.trim();
+  const area = document.getElementById("checkoutArea").value.trim();
   const line2 = document.getElementById("checkoutAddressLine2").value.trim();
   const landmark = document.getElementById("checkoutLandmark").value.trim();
   const city = document.getElementById("checkoutCity").value.trim();
   const state = document.getElementById("checkoutState").value.trim();
   const pincode = document.getElementById("checkoutPincode").value.trim();
 
-  const parts = [line1, line2];
+  const parts = [line1, area, line2];
   if (landmark) parts.push(`Near ${landmark}`);
   const cityLine = [city, state].filter(Boolean).join(", ");
   if (cityLine) parts.push(cityLine);
@@ -68,6 +69,7 @@ function assembleCheckoutAddress() {
   const pincodeInput = document.getElementById("checkoutPincode");
   const cityInput = document.getElementById("checkoutCity");
   const stateInput = document.getElementById("checkoutState");
+  const areaSelect = document.getElementById("checkoutArea");
   if (!pincodeInput || !cityInput) return;
 
   pincodeInput.addEventListener("input", async () => {
@@ -78,6 +80,11 @@ function assembleCheckoutAddress() {
     if (result && result.city) {
       cityInput.value = result.city;
       if (stateInput && result.state) stateInput.value = result.state;
+      if (areaSelect && result.areas && result.areas.length) {
+        areaSelect.innerHTML = result.areas.map((a) => `<option value="${a}">${a}</option>`).join("");
+      } else if (areaSelect) {
+        areaSelect.innerHTML = `<option value="">No specific areas found</option>`;
+      }
     }
   });
 })();
