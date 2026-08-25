@@ -33,9 +33,9 @@ router.post("/products/:id/reviews", async (req, res) => {
   }
 
   const { rows } = await pool.query(
-    `INSERT INTO reviews (product_id, customer_name, customer_email, rating, review_text)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [productId, customer_name, customer_email, ratingNum, review_text.trim()]
+    `INSERT INTO reviews (product_id, customer_name, customer_email, rating, review_text, ip_address)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [productId, customer_name, customer_email, ratingNum, review_text.trim(), req.ip]
   );
 
   const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim()).filter(Boolean);

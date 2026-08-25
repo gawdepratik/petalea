@@ -23,8 +23,8 @@ router.post("/custom-orders", async (req, res) => {
 
   const { rows } = await pool.query(
     `INSERT INTO custom_order_requests
-       (customer_name, customer_email, customer_phone, occasion, flower_preferences, budget_range, delivery_date, notes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+       (customer_name, customer_email, customer_phone, occasion, flower_preferences, budget_range, delivery_date, notes, ip_address)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
     [
       customer_name.trim(),
       customer_email.trim(),
@@ -33,7 +33,8 @@ router.post("/custom-orders", async (req, res) => {
       flower_preferences.trim(),
       budget_range.trim(),
       delivery_date || null,
-      notes.trim()
+      notes.trim(),
+      req.ip
     ]
   );
 

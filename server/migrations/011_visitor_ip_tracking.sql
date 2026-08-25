@@ -1,0 +1,3 @@
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS ip_address TEXT;
+ALTER TABLE custom_order_requests ADD COLUMN IF NOT EXISTS ip_address TEXT;
+ALTER TABLE reviews ADD COLUMN IF NOT EXISTS ip_address TEXT;

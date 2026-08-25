@@ -417,7 +417,7 @@ function renderOrders() {
             <tr data-id="${o.id}">
               <td>${o.orderRef}</td>
               <td>${new Date(o.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
-              <td class="wrap-cell">${o.customer_name}<br><span class="admin-hint">${o.customer_email}<br>${o.customer_phone}</span></td>
+              <td class="wrap-cell">${o.customer_name}<br><span class="admin-hint">${o.customer_email}<br>${o.customer_phone}${o.ip_address ? `<br>IP: ${o.ip_address}` : ""}</span></td>
               <td class="wrap-cell">${o.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}</td>
               <td>${formatPrice(o.total)}</td>
               <td><span class="admin-badge ${o.payment_status === "paid" ? "on" : ""}">${o.payment_status}</span></td>
@@ -869,7 +869,7 @@ async function loadReviews() {
           return `
             <tr>
               <td>${r.product_name}</td>
-              <td>${r.customer_name}<br><span class="admin-hint">${r.customer_email}</span></td>
+              <td>${r.customer_name}<br><span class="admin-hint">${r.customer_email}${r.ip_address ? `<br>IP: ${r.ip_address}` : ""}</span></td>
               <td>${starString(r.rating)}</td>
               <td class="wrap-cell">${r.review_text}</td>
               <td><span class="admin-badge ${r.status === "approved" ? "on" : ""}">${r.status}</span></td>
@@ -932,7 +932,7 @@ async function loadCustomOrders() {
           (r) => `
             <tr data-id="${r.id}">
               <td>${new Date(r.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
-              <td class="wrap-cell">${r.customer_name}<br><span class="admin-hint">${r.customer_email}<br>${r.customer_phone}</span></td>
+              <td class="wrap-cell">${r.customer_name}<br><span class="admin-hint">${r.customer_email}<br>${r.customer_phone}${r.ip_address ? `<br>IP: ${r.ip_address}` : ""}</span></td>
               <td>${r.occasion || "—"}</td>
               <td>${r.budget_range || "—"}</td>
               <td>${r.delivery_date ? new Date(r.delivery_date).toLocaleDateString("en-IN") : "—"}</td>

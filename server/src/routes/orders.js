@@ -35,7 +35,8 @@ async function createOrder({
   gift_message = "",
   items,
   promo_code = "",
-  payment_status = "unpaid"
+  payment_status = "unpaid",
+  ip_address = null
 }) {
   if (!customer_name || !customer_email || !customer_phone) {
     throw badRequest("Name, email, and phone are required");
@@ -107,9 +108,9 @@ async function createOrder({
     const total = Math.max(0, subtotal - discountAmount);
 
     const { rows: orderRows } = await client.query(
-      `INSERT INTO orders (customer_name, customer_email, customer_phone, delivery_address, delivery_date, notes, gift_message, subtotal, total, promo_code, discount_amount, payment_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
-      [customer_name, customer_email, customer_phone, delivery_address, delivery_date || null, notes, gift_message, subtotal, total, appliedPromoCode, discountAmount, payment_status]
+      `INSERT INTO orders (customer_name, customer_email, customer_phone, delivery_address, delivery_date, notes, gift_message, subtotal, total, promo_code, discount_amount, payment_status, ip_address)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+      [customer_name, customer_email, customer_phone, delivery_address, delivery_date || null, notes, gift_message, subtotal, total, appliedPromoCode, discountAmount, payment_status, ip_address]
     );
     const orderId = orderRows[0].id;
 
@@ -145,7 +146,7 @@ async function createOrder({
 router.post("/orders", async (req, res) => {
   let result;
   try {
-    result = await createOrder(req.body);
+    result = await createOrder({ ...req.body, ip_address: req.ip });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
     console.error(err);
