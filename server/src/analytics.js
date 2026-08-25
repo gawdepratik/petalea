@@ -40,9 +40,9 @@ async function getAnalyticsSummary() {
     analyticsDataClient.runReport({
       property,
       dateRanges,
-      dimensions: [{ name: "city" }, { name: "country" }],
-      metrics: [{ name: "sessions" }],
-      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      dimensions: [{ name: "city" }],
+      metrics: [{ name: "activeUsers" }],
+      orderBys: [{ metric: { metricName: "activeUsers" }, desc: true }],
       limit: 8
     })
   ]);
@@ -57,12 +57,10 @@ async function getAnalyticsSummary() {
       title: r.dimensionValues[0].value,
       views: Number(r.metricValues[0].value)
     })),
-    topLocations: (topLocations.rows || []).map((r) => {
-      const city = r.dimensionValues[0].value;
-      const country = r.dimensionValues[1].value;
-      const label = city && city !== "(not set)" ? `${city}, ${country}` : country;
-      return { label, sessions: Number(r.metricValues[0].value) };
-    })
+    topLocations: (topLocations.rows || []).map((r) => ({
+      label: r.dimensionValues[0].value,
+      activeUsers: Number(r.metricValues[0].value)
+    }))
   };
 }
 

@@ -1099,7 +1099,7 @@ async function loadAnalytics() {
     : `<tr><td colspan="2">No traffic recorded yet.</td></tr>`;
 
   analyticsTopLocationsBody.innerHTML = (data.topLocations || []).length
-    ? data.topLocations.map((l) => `<tr><td>${l.label}</td><td>${l.sessions}</td></tr>`).join("")
+    ? data.topLocations.map((l) => `<tr><td>${l.label}</td><td>${l.activeUsers}</td></tr>`).join("")
     : `<tr><td colspan="2">No location data yet.</td></tr>`;
 }
 
