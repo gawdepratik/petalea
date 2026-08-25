@@ -106,13 +106,10 @@ async function createOrder({
 
     const total = Math.max(0, subtotal - discountAmount);
 
-    // TEMPORARY: delivery_date is not yet stored — migration 009 has not actually
-    // been applied to production (confirmed via a live 500 on 2026-08-25). Re-add
-    // delivery_date to this INSERT once the migration is confirmed run.
     const { rows: orderRows } = await client.query(
-      `INSERT INTO orders (customer_name, customer_email, customer_phone, delivery_address, notes, gift_message, subtotal, total, promo_code, discount_amount, payment_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
-      [customer_name, customer_email, customer_phone, delivery_address, notes, gift_message, subtotal, total, appliedPromoCode, discountAmount, payment_status]
+      `INSERT INTO orders (customer_name, customer_email, customer_phone, delivery_address, delivery_date, notes, gift_message, subtotal, total, promo_code, discount_amount, payment_status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+      [customer_name, customer_email, customer_phone, delivery_address, delivery_date || null, notes, gift_message, subtotal, total, appliedPromoCode, discountAmount, payment_status]
     );
     const orderId = orderRows[0].id;
 
@@ -463,18 +460,18 @@ router.get("/admin/reports/export.csv", requireAdmin, async (req, res) => {
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const { rows: orders } = await pool.query(
-    `SELECT id, created_at, customer_name, customer_email, customer_phone, subtotal, total, payment_status, status, tracking_number, refund_status, refund_amount, refund_note, promo_code, discount_amount
+    `SELECT id, created_at, customer_name, customer_email, customer_phone, delivery_date, subtotal, total, payment_status, status, tracking_number, refund_status, refund_amount, refund_note, promo_code, discount_amount
      FROM orders ${where} ORDER BY created_at DESC`,
     params
   );
 
   const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-  const header = ["Order Ref", "Date", "Name", "Email", "Phone", "Subtotal", "Discount", "Promo Code", "Total", "Payment Status", "Order Status", "Tracking Number", "Refund Status", "Refund Amount", "Refund Note"];
+  const header = ["Order Ref", "Date", "Name", "Email", "Phone", "Delivery Date", "Subtotal", "Discount", "Promo Code", "Total", "Payment Status", "Order Status", "Tracking Number", "Refund Status", "Refund Amount", "Refund Note"];
   const lines = [header.join(",")];
 
   for (const o of orders) {
     lines.push(
-      [formatOrderRef(o.id), o.created_at.toISOString(), o.customer_name, o.customer_email, o.customer_phone, o.subtotal, o.discount_amount, o.promo_code, o.total, o.payment_status, o.status, o.tracking_number, o.refund_status, o.refund_amount, o.refund_note]
+      [formatOrderRef(o.id), o.created_at.toISOString(), o.customer_name, o.customer_email, o.customer_phone, formatDeliveryDate(o.delivery_date) || "", o.subtotal, o.discount_amount, o.promo_code, o.total, o.payment_status, o.status, o.tracking_number, o.refund_status, o.refund_amount, o.refund_note]
         .map(escape)
         .join(",")
     );
