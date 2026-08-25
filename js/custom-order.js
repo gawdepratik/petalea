@@ -3,6 +3,9 @@
   const feedback = document.getElementById("customOrderFeedback");
   if (!form) return;
 
+  const deliveryDateInput = document.getElementById("customDeliveryDate");
+  if (deliveryDateInput) deliveryDateInput.min = new Date().toISOString().slice(0, 10);
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     feedback.hidden = true;
@@ -27,6 +30,7 @@
         body: JSON.stringify(payload)
       });
       const body = await response.json();
+      const whatsappLink = document.getElementById("customWhatsappLink");
 
       if (!response.ok) {
         feedback.textContent = body.error || "Could not send your request. Please try again.";
@@ -34,7 +38,15 @@
       } else {
         feedback.textContent = "Thank you! We've received your request and will reach out shortly.";
         feedback.className = "promo-feedback success";
+        if (whatsappLink && typeof WHATSAPP_NUMBER !== "undefined" && WHATSAPP_NUMBER) {
+          const message = encodeURIComponent(
+            `Hi! I just sent a custom order request on petalea.in (${payload.customer_name}). I'd love to chat about it.`
+          );
+          whatsappLink.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+          whatsappLink.hidden = false;
+        }
         form.reset();
+        if (deliveryDateInput) deliveryDateInput.min = new Date().toISOString().slice(0, 10);
         if (typeof showToast === "function") showToast("Custom order request sent!");
       }
       feedback.hidden = false;

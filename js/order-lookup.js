@@ -43,6 +43,14 @@ lookupForm.addEventListener("submit", async (event) => {
     document.getElementById("resultRef").textContent = order.orderRef;
     document.getElementById("resultStatus").textContent = STATUS_LABELS[order.status] || order.status;
 
+    const deliveryDateEl = document.getElementById("resultDeliveryDate");
+    if (order.delivery_date) {
+      deliveryDateEl.textContent = `Preferred delivery date: ${new Date(order.delivery_date).toLocaleDateString("en-IN", { dateStyle: "medium" })}`;
+      deliveryDateEl.hidden = false;
+    } else {
+      deliveryDateEl.hidden = true;
+    }
+
     const trackingEl = document.getElementById("resultTracking");
     if (order.status === "shipped" && order.tracking_number) {
       trackingEl.textContent = `Tracking number: ${order.tracking_number}`;
@@ -64,6 +72,15 @@ lookupForm.addEventListener("submit", async (event) => {
       .join("");
 
     document.getElementById("resultTotal").textContent = formatPrice(order.total);
+
+    const whatsappLink = document.getElementById("resultWhatsappLink");
+    if (typeof WHATSAPP_NUMBER !== "undefined" && WHATSAPP_NUMBER) {
+      const message = encodeURIComponent(`Hi! I'm checking in about my order ${order.orderRef} on petalea.in.`);
+      whatsappLink.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+      whatsappLink.hidden = false;
+    } else {
+      whatsappLink.hidden = true;
+    }
 
     lookupResult.hidden = false;
   } catch {

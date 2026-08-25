@@ -41,6 +41,12 @@
   button.hidden = false;
 })();
 
+(function initDeliveryDateMin() {
+  const input = document.getElementById("checkoutDeliveryDate");
+  if (!input) return;
+  input.min = new Date().toISOString().slice(0, 10);
+})();
+
 const cart = [];
 
 const cartButton = document.getElementById("cartButton");
@@ -256,11 +262,13 @@ checkoutFormView.addEventListener("submit", async (event) => {
   event.preventDefault();
   placeOrderButton.disabled = true;
 
+  const deliveryDate = document.getElementById("checkoutDeliveryDate").value;
   const payload = {
     customer_name: document.getElementById("checkoutName").value.trim(),
     customer_phone: document.getElementById("checkoutPhone").value.trim(),
     customer_email: document.getElementById("checkoutEmail").value.trim(),
     delivery_address: document.getElementById("checkoutAddress").value.trim(),
+    delivery_date: deliveryDate || null,
     notes: document.getElementById("checkoutNotes").value.trim(),
     gift_message: document.getElementById("checkoutGiftMessage").value.trim(),
     items: cart.map(item => ({ id: item.id, quantity: item.quantity })),
@@ -278,6 +286,18 @@ checkoutFormView.addEventListener("submit", async (event) => {
 
     const result = await response.json();
     document.getElementById("orderRefDisplay").textContent = result.orderRef;
+
+    const whatsappLink = document.getElementById("whatsappConfirmLink");
+    if (whatsappLink && typeof WHATSAPP_NUMBER !== "undefined" && WHATSAPP_NUMBER) {
+      const deliveryLine = deliveryDate
+        ? ` for ${new Date(deliveryDate).toLocaleDateString("en-IN", { dateStyle: "medium" })}`
+        : "";
+      const message = encodeURIComponent(
+        `Hi! I just placed order ${result.orderRef} on petalea.in${deliveryLine}. I'd like to confirm the details.`
+      );
+      whatsappLink.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+      whatsappLink.hidden = false;
+    }
 
     cart.length = 0;
     renderCart();

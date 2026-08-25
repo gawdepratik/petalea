@@ -422,6 +422,7 @@ function renderOrders() {
                   ${ORDER_STATUSES.map((s) => `<option value="${s}" ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}
                 </select>
               </td>
+              <td>${o.delivery_date ? new Date(o.delivery_date).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "—"}</td>
               <td>${o.tracking_number || "—"}</td>
               <td class="wrap-cell">${o.refund_amount > 0 ? `${formatPrice(o.refund_amount)}${o.refund_note ? `<br><span class="admin-hint">${o.refund_note}</span>` : ""}` : "—"}</td>
               <td><button class="link-button" data-action="notes" data-id="${o.id}">${o.admin_notes ? "Edit notes" : "Add notes"}</button></td>
@@ -429,7 +430,7 @@ function renderOrders() {
           `
         )
         .join("")
-    : `<tr><td colspan="11">No orders match.</td></tr>`;
+    : `<tr><td colspan="12">No orders match.</td></tr>`;
 }
 
 orderSearch.addEventListener("input", renderOrders);
@@ -604,6 +605,7 @@ orderForm.addEventListener("submit", async (event) => {
     customer_phone: document.getElementById("orderPhone").value.trim(),
     customer_email: document.getElementById("orderEmail").value.trim(),
     delivery_address: document.getElementById("orderAddress").value.trim(),
+    delivery_date: document.getElementById("orderDeliveryDate").value || null,
     notes: document.getElementById("orderCustomerNotes").value.trim(),
     payment_status: document.getElementById("orderPaymentStatus").value,
     items

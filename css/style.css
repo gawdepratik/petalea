@@ -255,6 +255,9 @@ p { color: var(--brown); }
   font-family: var(--sans); font-size: 13px; padding: 11px 16px; border: 1px solid var(--line);
   border-radius: 999px; background: var(--white); color: var(--espresso); cursor: pointer;
 }
+.collection-controls .button-outline {
+  margin-top: 0; padding: 11px 24px; border-radius: 999px; font-size: 11px;
+}
 
 .category-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px; }
 .category-filters[hidden] { display: none; }
@@ -345,6 +348,36 @@ p { color: var(--brown); }
 .product-modal-info > p { margin-bottom: 20px; }
 .product-modal-info .product-bottom { padding-top: 16px; border-top: 1px solid var(--line); margin-bottom: 8px; }
 
+/* Full-screen product detail page (Amazon/Flipkart-style), scoped so the write-review modal keeps its compact form layout */
+#productDetailModal { padding: 0; background: var(--paper); }
+#productDetailModal .product-modal-panel {
+  width: 100%; max-width: none; height: 100%; max-height: none;
+  border-radius: 0; box-shadow: none; overflow-y: auto;
+  grid-template-columns: minmax(0, 58%) minmax(0, 42%);
+}
+#productDetailModal .product-modal-close {
+  position: fixed; top: 20px; right: 24px; width: 42px; height: 42px; border-radius: 50%;
+  background: var(--white); box-shadow: var(--shadow-sm); display: grid; place-items: center; line-height: 1;
+}
+#productDetailModal .product-modal-image {
+  position: sticky; top: 0; align-self: start; height: 100vh;
+  flex-direction: row; background: var(--ivory);
+}
+#productDetailModal #detailImage {
+  display: flex; align-items: center; justify-content: center; padding: 48px;
+}
+#productDetailModal #detailImage img, #productDetailModal #detailImage .product-placeholder {
+  width: auto; height: auto; max-width: 100%; max-height: 100%; min-height: 0; object-fit: contain;
+}
+#productDetailModal .product-modal-thumbs {
+  order: -1; flex-direction: column; width: 92px; flex-shrink: 0; gap: 12px;
+  padding: 24px 16px; overflow-y: auto; background: var(--paper);
+}
+#productDetailModal .product-thumb { width: 60px; height: 60px; }
+#productDetailModal .product-modal-info { padding: 64px 72px; max-width: 620px; }
+#productDetailModal .product-modal-info h3 { font-size: 38px; }
+#productDetailModal .product-reviews { max-width: 620px; }
+
 .product-modal-panel-form {
   grid-template-columns: 1fr; width: min(560px, 100%); padding: 48px 44px 40px;
 }
@@ -381,6 +414,21 @@ p { color: var(--brown); }
 @media (max-width: 720px) {
   .product-modal-panel { grid-template-columns: 1fr; }
   .product-modal-image img, .product-modal-image .product-placeholder { min-height: 220px; }
+}
+
+@media (max-width: 900px) {
+  #productDetailModal .product-modal-panel { display: block; height: auto; min-height: 100%; }
+  #productDetailModal .product-modal-image {
+    position: static; height: auto; flex-direction: column;
+  }
+  #productDetailModal #detailImage { padding: 24px; min-height: 300px; }
+  #productDetailModal #detailImage img, #productDetailModal #detailImage .product-placeholder { min-height: 260px; }
+  #productDetailModal .product-modal-thumbs {
+    order: 0; flex-direction: row; width: auto; height: auto; padding: 10px;
+  }
+  #productDetailModal .product-modal-info { padding: 32px 24px 48px; max-width: none; }
+  #productDetailModal .product-modal-info h3 { font-size: 28px; }
+  #productDetailModal .product-reviews { max-width: none; }
 }
 .add-cart {
   border: 0; background: none; border-bottom: 1px solid var(--espresso); padding-bottom: 3px;
@@ -569,6 +617,7 @@ p { color: var(--brown); }
 
 .order-confirmation { display: flex; flex-direction: column; flex: 1; justify-content: center; gap: 16px; }
 .order-confirmation[hidden] { display: none; }
+.order-confirmation .button-outline { margin-top: 0; }
 #cartView[hidden] { display: none; }
 .order-confirmation h3 { font-size: 34px; font-style: italic; font-family: var(--serif); color: var(--terracotta); }
 .order-ref {

@@ -9,6 +9,10 @@ function formatOrderRef(id) {
   return `PTL-${String(id).padStart(6, "0")}`;
 }
 
+function formatDeliveryDate(value) {
+  return value ? new Date(value).toLocaleDateString("en-IN", { dateStyle: "medium" }) : null;
+}
+
 function parseDateRange(query) {
   const from = query.from ? new Date(`${query.from}T00:00:00Z`) : null;
   const to = query.to ? new Date(`${query.to}T23:59:59Z`) : null;
@@ -26,6 +30,7 @@ async function createOrder({
   customer_email,
   customer_phone,
   delivery_address = "",
+  delivery_date = null,
   notes = "",
   gift_message = "",
   items,
@@ -102,9 +107,9 @@ async function createOrder({
     const total = Math.max(0, subtotal - discountAmount);
 
     const { rows: orderRows } = await client.query(
-      `INSERT INTO orders (customer_name, customer_email, customer_phone, delivery_address, notes, gift_message, subtotal, total, promo_code, discount_amount, payment_status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
-      [customer_name, customer_email, customer_phone, delivery_address, notes, gift_message, subtotal, total, appliedPromoCode, discountAmount, payment_status]
+      `INSERT INTO orders (customer_name, customer_email, customer_phone, delivery_address, delivery_date, notes, gift_message, subtotal, total, promo_code, discount_amount, payment_status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+      [customer_name, customer_email, customer_phone, delivery_address, delivery_date || null, notes, gift_message, subtotal, total, appliedPromoCode, discountAmount, payment_status]
     );
     const orderId = orderRows[0].id;
 
@@ -148,11 +153,13 @@ router.post("/orders", async (req, res) => {
   }
 
   const { orderId, total, discountAmount, promoCode, lineItems } = result;
-  const { customer_name, customer_email, customer_phone, delivery_address = "", notes = "", gift_message = "" } = req.body;
+  const { customer_name, customer_email, customer_phone, delivery_address = "", delivery_date = null, notes = "", gift_message = "" } = req.body;
   const orderRef = formatOrderRef(orderId);
   const itemLines = lineItems.map((i) => `- ${i.name} x${i.quantity} (₹${i.unitPrice} each)`).join("\n");
   const discountLine = discountAmount > 0 ? `\nDiscount (${promoCode}): -₹${discountAmount}` : "";
   const giftLine = gift_message.trim() ? `\nGift message: ${gift_message.trim()}` : "";
+  const deliveryDateLabel = formatDeliveryDate(delivery_date);
+  const deliveryDateLine = deliveryDateLabel ? `\nPreferred delivery date: ${deliveryDateLabel}` : "";
 
   const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim()).filter(Boolean);
   try {
@@ -161,7 +168,7 @@ router.post("/orders", async (req, res) => {
         sendMail({
           to,
           subject: `New order ${orderRef} — ₹${total}`,
-          text: `New order from ${customer_name} (${customer_email}, ${customer_phone}).\n\nItems:\n${itemLines}${discountLine}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}\nNotes: ${notes || "—"}${giftLine}`
+          text: `New order from ${customer_name} (${customer_email}, ${customer_phone}).\n\nItems:\n${itemLines}${discountLine}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}${deliveryDateLine}\nNotes: ${notes || "—"}${giftLine}`
         })
       )
     );
@@ -173,7 +180,7 @@ router.post("/orders", async (req, res) => {
     await sendMail({
       to: customer_email,
       subject: `Your PETALÉA order ${orderRef} is confirmed`,
-      text: `Hi ${customer_name},\n\nThank you for your order! Your order reference is ${orderRef} — keep this for any questions about your order.\n\nItems:\n${itemLines}${discountLine}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}\n\nWe'll be in touch shortly to confirm delivery and payment.\n\n— PETALÉA`
+      text: `Hi ${customer_name},\n\nThank you for your order! Your order reference is ${orderRef} — keep this for any questions about your order.\n\nItems:\n${itemLines}${discountLine}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}${deliveryDateLine}\n\nWe'll be in touch shortly to confirm delivery and payment.\n\n— PETALÉA`
     });
   } catch (emailErr) {
     console.error("Customer confirmation email failed:", emailErr.message);
@@ -193,16 +200,18 @@ router.post("/admin/orders", requireAdmin, async (req, res) => {
   }
 
   const { orderId, total, discountAmount, promoCode, lineItems } = result;
-  const { customer_name, customer_email, delivery_address = "" } = req.body;
+  const { customer_name, customer_email, delivery_address = "", delivery_date = null } = req.body;
   const orderRef = formatOrderRef(orderId);
   const itemLines = lineItems.map((i) => `- ${i.name} x${i.quantity} (₹${i.unitPrice} each)`).join("\n");
   const discountLine = discountAmount > 0 ? `\nDiscount (${promoCode}): -₹${discountAmount}` : "";
+  const deliveryDateLabel = formatDeliveryDate(delivery_date);
+  const deliveryDateLine = deliveryDateLabel ? `\nPreferred delivery date: ${deliveryDateLabel}` : "";
 
   try {
     await sendMail({
       to: customer_email,
       subject: `Your PETALÉA order ${orderRef} is confirmed`,
-      text: `Hi ${customer_name},\n\nThank you for your order! Your order reference is ${orderRef} — keep this for any questions about your order.\n\nItems:\n${itemLines}${discountLine}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}\n\nWe'll be in touch shortly to confirm delivery and payment.\n\n— PETALÉA`
+      text: `Hi ${customer_name},\n\nThank you for your order! Your order reference is ${orderRef} — keep this for any questions about your order.\n\nItems:\n${itemLines}${discountLine}\n\nTotal: ₹${total}\n\nDelivery address: ${delivery_address}${deliveryDateLine}\n\nWe'll be in touch shortly to confirm delivery and payment.\n\n— PETALÉA`
     });
   } catch (emailErr) {
     console.error("Customer confirmation email failed:", emailErr.message);
@@ -393,6 +402,7 @@ router.get("/orders/lookup", async (req, res) => {
     tracking_number: order.tracking_number,
     total: order.total,
     created_at: order.created_at,
+    delivery_date: order.delivery_date,
     refund_status: order.refund_status,
     refund_amount: order.refund_amount,
     items
@@ -450,18 +460,18 @@ router.get("/admin/reports/export.csv", requireAdmin, async (req, res) => {
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
   const { rows: orders } = await pool.query(
-    `SELECT id, created_at, customer_name, customer_email, customer_phone, subtotal, total, payment_status, status, tracking_number, refund_status, refund_amount, refund_note, promo_code, discount_amount
+    `SELECT id, created_at, customer_name, customer_email, customer_phone, delivery_date, subtotal, total, payment_status, status, tracking_number, refund_status, refund_amount, refund_note, promo_code, discount_amount
      FROM orders ${where} ORDER BY created_at DESC`,
     params
   );
 
   const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
-  const header = ["Order Ref", "Date", "Name", "Email", "Phone", "Subtotal", "Discount", "Promo Code", "Total", "Payment Status", "Order Status", "Tracking Number", "Refund Status", "Refund Amount", "Refund Note"];
+  const header = ["Order Ref", "Date", "Name", "Email", "Phone", "Delivery Date", "Subtotal", "Discount", "Promo Code", "Total", "Payment Status", "Order Status", "Tracking Number", "Refund Status", "Refund Amount", "Refund Note"];
   const lines = [header.join(",")];
 
   for (const o of orders) {
     lines.push(
-      [formatOrderRef(o.id), o.created_at.toISOString(), o.customer_name, o.customer_email, o.customer_phone, o.subtotal, o.discount_amount, o.promo_code, o.total, o.payment_status, o.status, o.tracking_number, o.refund_status, o.refund_amount, o.refund_note]
+      [formatOrderRef(o.id), o.created_at.toISOString(), o.customer_name, o.customer_email, o.customer_phone, formatDeliveryDate(o.delivery_date) || "", o.subtotal, o.discount_amount, o.promo_code, o.total, o.payment_status, o.status, o.tracking_number, o.refund_status, o.refund_amount, o.refund_note]
         .map(escape)
         .join(",")
     );

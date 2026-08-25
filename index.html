@@ -188,6 +188,7 @@
         <label>Phone<input required type="tel" id="checkoutPhone" placeholder="Your phone number"></label>
         <label>Email<input required type="email" id="checkoutEmail" placeholder="you@example.com"></label>
         <label>Delivery address<textarea required id="checkoutAddress" rows="3" placeholder="Where should we deliver this?"></textarea></label>
+        <label>Preferred delivery date (optional)<input type="date" id="checkoutDeliveryDate"></label>
         <label>Notes (optional)<textarea id="checkoutNotes" rows="2" placeholder="Anything else we should know?"></textarea></label>
         <label>Gift message (optional)<textarea id="checkoutGiftMessage" rows="2" placeholder="Add a note to include with the gift"></textarea></label>
 
@@ -209,6 +210,7 @@
         <p>Your order has been received. We'll reach out shortly to confirm delivery and payment details.</p>
         <p class="order-ref">Order reference<strong id="orderRefDisplay"></strong></p>
         <p class="admin-hint">You can check your order status anytime on the <a class="text-link" href="order-lookup.html">Track Order</a> page.</p>
+        <a class="button button-outline" id="whatsappConfirmLink" href="#" target="_blank" rel="noopener" hidden>Message us on WhatsApp</a>
         <button class="button button-dark" id="continueShoppingButton">Continue shopping</button>
       </div>
     </aside>
