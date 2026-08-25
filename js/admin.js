@@ -1071,17 +1071,20 @@ const analyticsUsers = document.getElementById("analyticsUsers");
 const analyticsSessions = document.getElementById("analyticsSessions");
 const analyticsPageViews = document.getElementById("analyticsPageViews");
 const analyticsTopPagesBody = document.getElementById("analyticsTopPagesBody");
+const analyticsTopLocationsBody = document.getElementById("analyticsTopLocationsBody");
 
 async function loadAnalytics() {
   analyticsUsers.textContent = "—";
   analyticsSessions.textContent = "—";
   analyticsPageViews.textContent = "—";
   analyticsTopPagesBody.innerHTML = `<tr><td colspan="2">Loading…</td></tr>`;
+  analyticsTopLocationsBody.innerHTML = `<tr><td colspan="2">Loading…</td></tr>`;
 
   const response = await api("/api/admin/analytics/summary");
   if (!response.ok) {
     showError(adminError, "Could not load analytics right now. Check the server's Google Analytics setup.");
     analyticsTopPagesBody.innerHTML = `<tr><td colspan="2">Could not load analytics.</td></tr>`;
+    analyticsTopLocationsBody.innerHTML = `<tr><td colspan="2">Could not load analytics.</td></tr>`;
     return;
   }
   hideError(adminError);
@@ -1094,6 +1097,10 @@ async function loadAnalytics() {
   analyticsTopPagesBody.innerHTML = data.topPages.length
     ? data.topPages.map((p) => `<tr><td>${p.title}</td><td>${p.views}</td></tr>`).join("")
     : `<tr><td colspan="2">No traffic recorded yet.</td></tr>`;
+
+  analyticsTopLocationsBody.innerHTML = (data.topLocations || []).length
+    ? data.topLocations.map((l) => `<tr><td>${l.label}</td><td>${l.sessions}</td></tr>`).join("")
+    : `<tr><td colspan="2">No location data yet.</td></tr>`;
 }
 
 checkSession();

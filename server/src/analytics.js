@@ -23,7 +23,7 @@ async function getAnalyticsSummary() {
   const property = `properties/${propertyId}`;
   const dateRanges = [{ startDate: "7daysAgo", endDate: "today" }];
 
-  const [[totals], [topPages]] = await Promise.all([
+  const [[totals], [topPages], [topLocations]] = await Promise.all([
     analyticsDataClient.runReport({
       property,
       dateRanges,
@@ -35,6 +35,14 @@ async function getAnalyticsSummary() {
       dimensions: [{ name: "pageTitle" }],
       metrics: [{ name: "screenPageViews" }],
       orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+      limit: 8
+    }),
+    analyticsDataClient.runReport({
+      property,
+      dateRanges,
+      dimensions: [{ name: "city" }, { name: "country" }],
+      metrics: [{ name: "sessions" }],
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
       limit: 8
     })
   ]);
@@ -48,7 +56,13 @@ async function getAnalyticsSummary() {
     topPages: (topPages.rows || []).map((r) => ({
       title: r.dimensionValues[0].value,
       views: Number(r.metricValues[0].value)
-    }))
+    })),
+    topLocations: (topLocations.rows || []).map((r) => {
+      const city = r.dimensionValues[0].value;
+      const country = r.dimensionValues[1].value;
+      const label = city && city !== "(not set)" ? `${city}, ${country}` : country;
+      return { label, sessions: Number(r.metricValues[0].value) };
+    })
   };
 }
 
