@@ -99,16 +99,11 @@
 .admin-table-wrap::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
 .admin-table-wrap::-webkit-scrollbar-thumb:hover { background: var(--brown-light); }
 .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 640px; }
-.admin-table th, .admin-table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+.admin-table th, .admin-table td { text-align: left; padding: 9px 11px; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
 .admin-table td.wrap-cell { white-space: normal; min-width: 160px; max-width: 260px; }
+.admin-table td.wrap-cell-sm { white-space: normal; min-width: 70px; max-width: 170px; }
 .admin-table th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--brown); font-weight: 600; }
 .admin-table tr:last-child td { border-bottom: 0; }
-.admin-table th:first-child, .admin-table td:first-child {
-  position: sticky; left: 0; z-index: 1; background: var(--white); box-shadow: 1px 0 0 var(--line-soft);
-}
-.admin-table th:last-child, .admin-table td:last-child {
-  position: sticky; right: 0; z-index: 1; background: var(--white); box-shadow: -1px 0 0 var(--line-soft);
-}
 .admin-table td.admin-row-actions { display: flex; gap: 14px; white-space: nowrap; }
 .admin-table button.link-button {
   border: 0; background: none; padding: 0; font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
@@ -122,8 +117,9 @@
 .admin-badge.on { background: rgba(111,125,94,.15); color: var(--sage); }
 
 .order-status-select {
-  font-family: var(--sans); font-size: 12px; text-transform: capitalize; padding: 6px 10px;
+  font-family: var(--sans); font-size: 12px; text-transform: capitalize; padding: 6px 8px;
   border: 1px solid var(--line); border-radius: 3px; background: var(--white); color: var(--espresso); cursor: pointer;
+  width: 108px;
 }
 
 .admin-modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; }

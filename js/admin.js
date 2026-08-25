@@ -429,7 +429,7 @@ function renderOrders() {
               </td>
               <td>${o.delivery_date ? new Date(o.delivery_date).toLocaleDateString("en-IN", { dateStyle: "medium" }) : "—"}</td>
               <td>${o.tracking_number || "—"}</td>
-              <td class="wrap-cell">${o.refund_amount > 0 ? `${formatPrice(o.refund_amount)}${o.refund_note ? `<br><span class="admin-hint">${o.refund_note}</span>` : ""}` : "—"}</td>
+              <td class="wrap-cell-sm">${o.refund_amount > 0 ? `${formatPrice(o.refund_amount)}${o.refund_note ? `<br><span class="admin-hint">${o.refund_note}</span>` : ""}` : "—"}</td>
               <td><button class="link-button" data-action="notes" data-id="${o.id}">${o.admin_notes ? "Edit notes" : "Add notes"}</button></td>
               <td>${
                 viewingDeletedOrders
