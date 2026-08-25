@@ -150,12 +150,14 @@ p { color: var(--brown); }
 
 /* ------------------------------ Hero ---------------------------------- */
 .hero {
-  min-height: calc(100vh - 88px);
+  min-height: 0;
+  aspect-ratio: 16 / 9;
   display: flex; align-items: center; overflow: hidden;
   position: relative;
-  background-image: url('../images/hero-bouquet.png');
-  background-size: cover;
-  background-position: center 38%;
+  background-image: url('../images/Homepage-1.png');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 .hero::before {
   content: "";
@@ -631,6 +633,7 @@ p { color: var(--brown); }
   .menu-toggle { display: block; }
   .contact-grid { grid-template-columns: 1fr; }
   .story-grid { grid-template-columns: 1fr; gap: 50px; }
+  .hero { aspect-ratio: auto; min-height: calc(100vh - 72px); background-size: contain; background-color: var(--cream); }
   .hero-copy { padding: 60px 0; }
   .product-grid { grid-template-columns: 1fr 1fr; }
   .product-card img, .product-placeholder { height: 360px; }
@@ -647,6 +650,7 @@ p { color: var(--brown); }
   .section-pad { padding: 80px 0; }
   h1 { font-size: 52px; }
   h2 { font-size: 42px; }
+  .hero { aspect-ratio: auto; min-height: calc(100vh - 72px); background-size: contain; background-color: var(--cream); }
   .hero-copy { padding: 50px 0; }
   .hero-text { font-size: 15.5px; }
   .hero-actions { align-items: flex-start; flex-direction: column; gap: 20px; }
