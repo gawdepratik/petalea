@@ -5,6 +5,10 @@ const { sendMail } = require("../email");
 
 const router = express.Router();
 
+// Alert admins the first time a purchase drops a tracked product's stock to
+// this level or below (not on every sale after that - only the crossing).
+const LOW_STOCK_THRESHOLD = Number(process.env.LOW_STOCK_THRESHOLD) || 2;
+
 function formatOrderRef(id) {
   return `PTL-${String(id).padStart(6, "0")}`;
 }
@@ -115,6 +119,7 @@ async function createOrder({
       [customer_name, customer_email, customer_phone, delivery_address, delivery_date || null, city.trim(), pincode.trim(), notes, gift_message, subtotal, total, appliedPromoCode, discountAmount, payment_status, ip_address]
     );
     const orderId = orderRows[0].id;
+    const lowStockAlerts = [];
 
     for (const item of lineItems) {
       await client.query(
@@ -132,16 +137,40 @@ async function createOrder({
         if (!stockRows[0]) {
           throw badRequest(`${item.name} just went out of stock. Please remove it and try again.`, 409);
         }
+
+        const stockAfter = stockRows[0].stock_quantity;
+        if (item.stockQuantity > LOW_STOCK_THRESHOLD && stockAfter <= LOW_STOCK_THRESHOLD) {
+          lowStockAlerts.push({ name: item.name, stockAfter });
+        }
       }
     }
 
     await client.query("COMMIT");
-    return { orderId, subtotal, total, discountAmount, promoCode: appliedPromoCode, lineItems };
+    return { orderId, subtotal, total, discountAmount, promoCode: appliedPromoCode, lineItems, lowStockAlerts };
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
   } finally {
     client.release();
+  }
+}
+
+async function sendLowStockAlerts(lowStockAlerts = []) {
+  if (!lowStockAlerts.length) return;
+  const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim()).filter(Boolean);
+  const lines = lowStockAlerts.map((a) => `- ${a.name}: ${a.stockAfter} left`).join("\n");
+  try {
+    await Promise.all(
+      adminEmails.map((to) =>
+        sendMail({
+          to,
+          subject: `Low stock alert: ${lowStockAlerts.map((a) => a.name).join(", ")}`,
+          text: `The following item(s) just dropped to ${LOW_STOCK_THRESHOLD} or fewer in stock:\n\n${lines}\n\nLog into the admin panel to restock or adjust availability.`
+        })
+      )
+    );
+  } catch (emailErr) {
+    console.error("Low stock alert email failed:", emailErr.message);
   }
 }
 
@@ -189,6 +218,8 @@ router.post("/orders", async (req, res) => {
     console.error("Customer confirmation email failed:", emailErr.message);
   }
 
+  await sendLowStockAlerts(result.lowStockAlerts);
+
   res.status(201).json({ ok: true, orderId, orderRef, total, discountAmount });
 });
 
@@ -219,6 +250,8 @@ router.post("/admin/orders", requireAdmin, async (req, res) => {
   } catch (emailErr) {
     console.error("Customer confirmation email failed:", emailErr.message);
   }
+
+  await sendLowStockAlerts(result.lowStockAlerts);
 
   res.status(201).json({ ok: true, orderId, orderRef, total, discountAmount });
 });

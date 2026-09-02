@@ -411,6 +411,20 @@ function purgeDeadlineLabel(deletedAt) {
   return deadline.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 }
 
+// Flags rows that share an IP address with another recent submission, to
+// help spot spam/duplicate bursts at a glance. Counts within the last 24h
+// among whatever list is currently loaded (so it respects any active
+// search/date filter).
+function ipDuplicateBadge(list, item) {
+  if (!item.ip_address) return "";
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const itemTime = new Date(item.created_at).getTime();
+  if (itemTime < cutoff) return ""; // this row itself isn't part of the recent window, even if others sharing its IP are
+  const matches = list.filter((o) => o.ip_address === item.ip_address && new Date(o.created_at).getTime() >= cutoff);
+  if (matches.length <= 1) return "";
+  return `<br><span class="admin-badge warning" title="Same IP as ${matches.length - 1} other submission(s) in the last 24h">⚠ ${matches.length} from this IP (24h)</span>`;
+}
+
 function renderOrders() {
   const ORDER_STATUSES = ["new", "confirmed", "shipped", "completed", "cancelled"];
   const term = orderSearch.value.trim().toLowerCase();
@@ -430,7 +444,7 @@ function renderOrders() {
             <tr data-id="${o.id}">
               <td>${o.orderRef}</td>
               <td>${new Date(o.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
-              <td class="wrap-cell">${o.customer_name}<br><span class="admin-hint">${o.customer_email}<br>${o.customer_phone}${o.city ? `<br>${o.city}${o.pincode ? ` — ${o.pincode}` : ""}` : ""}${o.ip_address ? `<br>IP: ${o.ip_address}` : ""}</span></td>
+              <td class="wrap-cell">${o.customer_name}<br><span class="admin-hint">${o.customer_email}<br>${o.customer_phone}${o.city ? `<br>${o.city}${o.pincode ? ` — ${o.pincode}` : ""}` : ""}${o.ip_address ? `<br>IP: ${o.ip_address}` : ""}</span>${ipDuplicateBadge(allOrders, o)}</td>
               <td class="wrap-cell">${o.items.map((i) => `${i.product_name} ×${i.quantity}`).join(", ")}</td>
               <td>${formatPrice(o.total)}</td>
               <td><span class="admin-badge ${o.payment_status === "paid" ? "on" : ""}">${o.payment_status}</span></td>
@@ -1015,7 +1029,7 @@ function renderCustomOrders() {
           (r) => `
             <tr data-id="${r.id}">
               <td>${new Date(r.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</td>
-              <td class="wrap-cell">${r.customer_name}<br><span class="admin-hint">${r.customer_email}<br>${r.customer_phone}${r.ip_address ? `<br>IP: ${r.ip_address}` : ""}</span></td>
+              <td class="wrap-cell">${r.customer_name}<br><span class="admin-hint">${r.customer_email}<br>${r.customer_phone}${r.ip_address ? `<br>IP: ${r.ip_address}` : ""}</span>${ipDuplicateBadge(allCustomOrders, r)}</td>
               <td>${r.occasion || "—"}</td>
               <td>${r.budget_range || "—"}</td>
               <td>${r.delivery_date ? new Date(r.delivery_date).toLocaleDateString("en-IN") : "—"}</td>
@@ -1121,8 +1135,33 @@ const analyticsTopPagesHeader = document.getElementById("analyticsTopPagesHeader
 const analyticsLocationsHeading = document.getElementById("analyticsLocationsHeading");
 const analyticsTopLocationsBody = document.getElementById("analyticsTopLocationsBody");
 const analyticsRangeSelect = document.getElementById("analyticsRangeSelect");
+const visitsVsSalesHeading = document.getElementById("visitsVsSalesHeading");
+const visitsVsSalesBody = document.getElementById("visitsVsSalesBody");
 
 analyticsRangeSelect.addEventListener("change", loadAnalytics);
+
+function mergeVisitsAndSales(topLocations, topCities) {
+  const map = new Map();
+
+  (topLocations || []).forEach((l) => {
+    const key = l.label.trim().toLowerCase();
+    map.set(key, { city: l.label, visits: l.activeUsers, visitPercent: l.percentOfVisits, orders: 0, revenue: 0, revenuePercent: 0 });
+  });
+
+  (topCities || []).forEach((c) => {
+    const key = c.city.trim().toLowerCase();
+    const existing = map.get(key);
+    if (existing) {
+      existing.orders = c.orderCount;
+      existing.revenue = c.revenue;
+      existing.revenuePercent = c.percentOfRevenue;
+    } else {
+      map.set(key, { city: c.city, visits: 0, visitPercent: 0, orders: c.orderCount, revenue: c.revenue, revenuePercent: c.percentOfRevenue });
+    }
+  });
+
+  return [...map.values()].sort((a, b) => b.revenue - a.revenue || b.visits - a.visits);
+}
 
 async function loadAnalytics() {
   analyticsUsers.textContent = "—";
@@ -1130,22 +1169,36 @@ async function loadAnalytics() {
   analyticsPageViews.textContent = "—";
   analyticsTopPagesBody.innerHTML = `<tr><td colspan="2">Loading…</td></tr>`;
   analyticsTopLocationsBody.innerHTML = `<tr><td colspan="3">Loading…</td></tr>`;
+  visitsVsSalesBody.innerHTML = `<tr><td colspan="6">Loading…</td></tr>`;
 
-  const response = await api(`/api/admin/analytics/summary?days=${analyticsRangeSelect.value}`);
-  if (!response.ok) {
+  const days = Number(analyticsRangeSelect.value);
+  const fromDate = new Date();
+  fromDate.setDate(fromDate.getDate() - days);
+  const fromParam = fromDate.toISOString().slice(0, 10);
+
+  const [analyticsResponse, salesResponse] = await Promise.all([
+    api(`/api/admin/analytics/summary?days=${days}`),
+    api(`/api/admin/reports/summary?from=${fromParam}`)
+  ]);
+
+  if (!analyticsResponse.ok) {
     showError(adminError, "Could not load analytics right now. Check the server's Google Analytics setup.");
     analyticsTopPagesBody.innerHTML = `<tr><td colspan="2">Could not load analytics.</td></tr>`;
     analyticsTopLocationsBody.innerHTML = `<tr><td colspan="3">Could not load analytics.</td></tr>`;
+    visitsVsSalesBody.innerHTML = `<tr><td colspan="6">Could not load analytics.</td></tr>`;
     return;
   }
   hideError(adminError);
 
-  const data = await response.json();
+  const data = await analyticsResponse.json();
+  const sales = salesResponse.ok ? await salesResponse.json() : { topCities: [] };
+
   analyticsUsers.textContent = data.activeUsers;
   analyticsSessions.textContent = data.sessions;
   analyticsPageViews.textContent = data.pageViews;
   analyticsTopPagesHeader.textContent = `Views (${data.days} days)`;
   analyticsLocationsHeading.textContent = `Top visitor locations (${data.days} days)`;
+  visitsVsSalesHeading.textContent = `Visits vs sales by city (${data.days} days)`;
 
   analyticsTopPagesBody.innerHTML = data.topPages.length
     ? data.topPages.map((p) => `<tr><td>${p.title}</td><td>${p.views}</td></tr>`).join("")
@@ -1154,6 +1207,13 @@ async function loadAnalytics() {
   analyticsTopLocationsBody.innerHTML = (data.topLocations || []).length
     ? data.topLocations.map((l) => `<tr><td>${l.label}</td><td>${l.activeUsers}</td><td>${l.percentOfVisits}%</td></tr>`).join("")
     : `<tr><td colspan="3">No location data yet.</td></tr>`;
+
+  const combined = mergeVisitsAndSales(data.topLocations, sales.topCities);
+  visitsVsSalesBody.innerHTML = combined.length
+    ? combined
+        .map((c) => `<tr><td>${c.city}</td><td>${c.visits || "—"}</td><td>${c.visits ? c.visitPercent + "%" : "—"}</td><td>${c.orders || "—"}</td><td>${c.revenue ? formatPrice(c.revenue) : "—"}</td><td>${c.orders ? c.revenuePercent + "%" : "—"}</td></tr>`)
+        .join("")
+    : `<tr><td colspan="6">No visit or sales data yet.</td></tr>`;
 }
 
 checkSession();

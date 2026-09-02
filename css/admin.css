@@ -115,6 +115,7 @@
   padding: 3px 9px; border-radius: 999px; background: var(--line-soft); color: var(--brown);
 }
 .admin-badge.on { background: rgba(111,125,94,.15); color: var(--sage); }
+.admin-badge.warning { background: rgba(181,88,60,.15); color: var(--terracotta); }
 
 .order-status-select {
   font-family: var(--sans); font-size: 12px; text-transform: capitalize; padding: 6px 8px;
